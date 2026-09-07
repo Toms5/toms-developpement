@@ -3,12 +3,9 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
-  ModalBuilder,
   PermissionFlagsBits,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
-  TextInputBuilder,
-  TextInputStyle,
   SlashCommandBuilder,
   type ChatInputCommandInteraction
 } from 'discord.js';
@@ -28,6 +25,10 @@ import {
   updateProjectStatus,
   type ProjectStatus
 } from '../../services/projectService.js';
+
+import {
+  getProjectRepository
+} from '../../services/projectRepositoryService.js';
 
 const STATUS_OPTIONS: {
   value: ProjectStatus;
@@ -111,6 +112,14 @@ function buildProjectEmbed(
       ? tasks.join('\n')
       : 'Aucune tâche pour le moment.';
 
+  const repository =
+    getProjectRepository(project.id);
+
+  const repositoryText =
+    repository
+      ? `🔗 **Repository GitHub :** ${repository.url}`
+      : '🔗 **Repository GitHub :** Aucun repository lié.';
+
   return new EmbedBuilder()
     .setTitle(
       `📦 Projet #${project.id} — ${project.name}`
@@ -122,6 +131,8 @@ function buildProjectEmbed(
         `📊 **Statut :** ${getStatusLabel(project.status)}`,
         `📈 **Progression :** ${progress}%`,
         `📋 **Tâches :** ${completed}/${project.tasks.length}`,
+        '',
+        repositoryText,
         '',
         '### 📝 Description',
         project.description,
@@ -201,10 +212,35 @@ function buildProjectButtons(
           .setStyle(ButtonStyle.Danger)
       );
 
-  return [
-    main,
+  const repository =
+    getProjectRepository(projectId);
+
+  const components:
+    ActionRowBuilder<ButtonBuilder>[] = [
+      main
+    ];
+
+  if (repository) {
+    const repositoryButton =
+      new ButtonBuilder()
+        .setLabel('Repository GitHub')
+        .setEmoji('🔗')
+        .setStyle(ButtonStyle.Link)
+        .setURL(repository.url);
+
+    components.push(
+      new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(
+          repositoryButton
+        )
+    );
+  }
+
+  components.push(
     management
-  ];
+  );
+
+  return components;
 }
 
 function buildProjectHistory(
@@ -493,12 +529,21 @@ const command: Command = {
             ].join('\n')
           : projects
               .map(
-                project =>
-                  [
+                project => {
+                  const repository =
+                    getProjectRepository(
+                      project.id
+                    );
+
+                  return [
                     `### 📦 #${project.id} — ${project.name}`,
                     `👤 <@${project.clientId}>`,
-                    `${getStatusLabel(project.status)} • ${getProjectProgress(project)}%`
-                  ].join('\n')
+                    `${getStatusLabel(project.status)} • ${getProjectProgress(project)}%`,
+                    repository
+                      ? `🔗 [Repository GitHub](${repository.url})`
+                      : '🔗 Aucun repository GitHub lié'
+                  ].join('\n');
+                }
               )
               .join('\n\n');
 
@@ -521,7 +566,8 @@ const command: Command = {
           })
           .setTimestamp();
 
-      const components: ActionRowBuilder<ButtonBuilder>[] = [];
+      const components:
+        ActionRowBuilder<ButtonBuilder>[] = [];
 
       if (projects.length > 0) {
         const buttons =
@@ -613,12 +659,21 @@ const command: Command = {
               ? 'Aucun projet enregistré.'
               : projects
                   .map(
-                    project =>
-                      [
+                    project => {
+                      const repository =
+                        getProjectRepository(
+                          project.id
+                        );
+
+                      return [
                         `### #${project.id} — ${project.name}`,
                         `👤 <@${project.clientId}>`,
-                        `${getStatusLabel(project.status)} • ${getProjectProgress(project)}%`
-                      ].join('\n')
+                        `${getStatusLabel(project.status)} • ${getProjectProgress(project)}%`,
+                        repository
+                          ? `🔗 [Repository GitHub](${repository.url})`
+                          : '🔗 Aucun repository GitHub lié'
+                      ].join('\n');
+                    }
                   )
                   .join('\n\n')
           )
