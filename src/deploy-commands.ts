@@ -10,6 +10,7 @@ import help from './commands/general/help.js';
 import serverinfo from './commands/general/serverinfo.js';
 import userinfo from './commands/general/userinfo.js';
 import avis from './commands/general/avis.js';
+import reglement from './commands/general/reglement.js';
 
 import clear from './commands/moderation/clear.js';
 import kick from './commands/moderation/kick.js';
@@ -54,6 +55,7 @@ const commands = [
   serverinfo.data.toJSON(),
   userinfo.data.toJSON(),
   avis.data.toJSON(),
+  reglement.data.toJSON(),
 
   clear.data.toJSON(),
   kick.data.toJSON(),
@@ -94,6 +96,4 @@ try {
     '❌ Impossible d’enregistrer les commandes :',
     error
   );
-
-  process.exitCode = 1;
 }

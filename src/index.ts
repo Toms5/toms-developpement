@@ -4,7 +4,8 @@ import {
   Client,
   Collection,
   Events,
-  GatewayIntentBits
+  GatewayIntentBits,
+  Partials
 } from 'discord.js';
 
 import { config } from './config/config.js';
@@ -14,6 +15,7 @@ import help from './commands/general/help.js';
 import serverinfo from './commands/general/serverinfo.js';
 import userinfo from './commands/general/userinfo.js';
 import avis from './commands/general/avis.js';
+import reglement from './commands/general/reglement.js';
 
 import clear from './commands/moderation/clear.js';
 import kick from './commands/moderation/kick.js';
@@ -31,26 +33,32 @@ import guildMemberAdd from './events/guildMemberAdd.js';
 import guildMemberRemove from './events/guildMemberRemove.js';
 import messageDelete from './events/messageDelete.js';
 import messageUpdate from './events/messageUpdate.js';
+import messageReactionAdd from './events/messageReactionAdd.js';
 
 import { createLogChannel } from './services/logger.js';
+import { startBotActivity } from './services/botActivity.js';
+import { startServerStats } from './services/serverStats.js';
 
 import type { Command } from './types/command.js';
 
-const client =
-  new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.GuildMessages,
-      GatewayIntentBits.MessageContent
-    ]
-  });
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildPresences
+  ],
+  partials: [
+    Partials.Message,
+    Partials.Reaction,
+    Partials.User
+  ]
+});
 
 client.commands =
-  new Collection<
-    string,
-    Command
-  >();
+  new Collection<string, Command>();
 
 const commands: Command[] = [
   ping,
@@ -58,6 +66,7 @@ const commands: Command[] = [
   serverinfo,
   userinfo,
   avis,
+  reglement,
 
   clear,
   kick,
@@ -70,9 +79,7 @@ const commands: Command[] = [
   projet
 ];
 
-for (
-  const command of commands
-) {
+for (const command of commands) {
   client.commands.set(
     command.data.name,
     command
@@ -81,17 +88,17 @@ for (
 
 client.once(
   Events.ClientReady,
-  async readyClient => {
-    await ready.execute(
-      readyClient
-    );
+  async (client) => {
+    await ready.execute(client);
+
+    startBotActivity(client);
+    startServerStats(client);
 
     for (
-      const guild of
-        readyClient.guilds.cache.values()
+      const guild of client.guilds.cache.values()
     ) {
       await createLogChannel(
-        readyClient,
+        client,
         guild
       );
     }
@@ -100,45 +107,43 @@ client.once(
 
 client.on(
   Events.InteractionCreate,
-  interaction =>
-    interactionCreate.execute(
-      interaction
-    )
+  (interaction) =>
+    interactionCreate.execute(interaction)
 );
 
 client.on(
   Events.GuildMemberAdd,
-  member =>
-    guildMemberAdd.execute(
-      member
-    )
+  (member) =>
+    guildMemberAdd.execute(member)
 );
 
 client.on(
   Events.GuildMemberRemove,
-  member =>
-    guildMemberRemove.execute(
-      member
-    )
+  (member) =>
+    guildMemberRemove.execute(member)
 );
 
 client.on(
   Events.MessageDelete,
-  message =>
-    messageDelete.execute(
-      message
-    )
+  (message) =>
+    messageDelete.execute(message)
 );
 
 client.on(
   Events.MessageUpdate,
-  (
-    oldMessage,
-    newMessage
-  ) =>
+  (oldMessage, newMessage) =>
     messageUpdate.execute(
       oldMessage,
       newMessage
+    )
+);
+
+client.on(
+  Events.MessageReactionAdd,
+  (reaction, user) =>
+    messageReactionAdd.execute(
+      reaction,
+      user
     )
 );
 
