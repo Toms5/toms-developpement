@@ -1,11 +1,11 @@
 import 'dotenv/config';
 
 import {
-  Client,
-  Collection,
-  Events,
-  GatewayIntentBits,
-  Partials
+Client,
+Collection,
+Events,
+GatewayIntentBits,
+Partials
 } from 'discord.js';
 
 import { config } from './config/config.js';
@@ -42,115 +42,116 @@ import { startServerStats } from './services/serverStats.js';
 import type { Command } from './types/command.js';
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildMessageReactions,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildPresences
-  ],
-  partials: [
-    Partials.Message,
-    Partials.Reaction,
-    Partials.User
-  ]
+intents: [
+GatewayIntentBits.Guilds,
+GatewayIntentBits.GuildMembers,
+GatewayIntentBits.GuildMessages,
+GatewayIntentBits.GuildMessageReactions,
+GatewayIntentBits.MessageContent,
+GatewayIntentBits.GuildPresences
+],
+partials: [
+Partials.Message,
+Partials.Reaction,
+Partials.User
+]
 });
 
 client.commands =
-  new Collection<string, Command>();
+new Collection<string, Command>();
 
 const commands: Command[] = [
-  ping,
-  help,
-  serverinfo,
-  userinfo,
-  avis,
-  reglement,
+ping,
+help,
+serverinfo,
+userinfo,
+avis,
+reglement,
 
-  clear,
-  kick,
-  ban,
-  timeout,
-  untimeout,
+clear,
+kick,
+ban,
+timeout,
+untimeout,
 
-  ticketPanel,
+ticketPanel,
 
-  projet
+projet
 ];
 
 for (const command of commands) {
-  client.commands.set(
-    command.data.name,
-    command
-  );
+client.commands.set(
+command.data.name,
+command
+);
 }
 
 client.once(
-  Events.ClientReady,
-  async (client) => {
-    await ready.execute(client);
+Events.ClientReady,
+async (client) => {
+await ready.execute(client);
 
-    startBotActivity(client);
-    startServerStats(client);
+startBotActivity(client);
+startServerStats(client);
 
-    for (
-      const guild of client.guilds.cache.values()
-    ) {
-      await createLogChannel(
-        client,
-        guild
-      );
-    }
-  }
+for (
+  const guild of client.guilds.cache.values()
+) {
+  await createLogChannel(
+    client,
+    guild
+  );
+}
+
+}
 );
 
 client.on(
-  Events.InteractionCreate,
-  (interaction) =>
-    interactionCreate.execute(interaction)
+Events.InteractionCreate,
+(interaction) =>
+interactionCreate.execute(interaction)
 );
 
 client.on(
-  Events.GuildMemberAdd,
-  (member) =>
-    guildMemberAdd.execute(member)
+Events.GuildMemberAdd,
+(member) =>
+guildMemberAdd.execute(member)
 );
 
 client.on(
-  Events.GuildMemberRemove,
-  (member) =>
-    guildMemberRemove.execute(member)
+Events.GuildMemberRemove,
+(member) =>
+guildMemberRemove.execute(member)
 );
 
 client.on(
-  Events.MessageDelete,
-  (message) =>
-    messageDelete.execute(message)
+Events.MessageDelete,
+(message) =>
+messageDelete.execute(message)
 );
 
 client.on(
-  Events.MessageUpdate,
-  (oldMessage, newMessage) =>
-    messageUpdate.execute(
-      oldMessage,
-      newMessage
-    )
+Events.MessageUpdate,
+(oldMessage, newMessage) =>
+messageUpdate.execute(
+oldMessage,
+newMessage
+)
 );
 
 client.on(
-  Events.MessageReactionAdd,
-  (reaction, user) =>
-    messageReactionAdd.execute(
-      reaction,
-      user
-    )
+Events.MessageReactionAdd,
+(reaction, user) =>
+messageReactionAdd.execute(
+reaction,
+user
+)
 );
 
 console.log(
-  "🚀 Démarrage de Tom's Développement..."
+"🚀 Démarrage de Tom's Développement..."
 );
 
 await client.login(
-  config.discordToken
+config.discordToken
 );
