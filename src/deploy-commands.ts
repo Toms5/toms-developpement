@@ -11,6 +11,7 @@ import serverinfo from './commands/general/serverinfo.js';
 import userinfo from './commands/general/userinfo.js';
 import avis from './commands/general/avis.js';
 import reglement from './commands/general/reglement.js';
+import indexCommand from './commands/general/index.js';
 
 import clear from './commands/moderation/clear.js';
 import kick from './commands/moderation/kick.js';
@@ -56,6 +57,7 @@ serverinfo.data.toJSON(),
 userinfo.data.toJSON(),
 avis.data.toJSON(),
 reglement.data.toJSON(),
+indexCommand.data.toJSON(),
 
 clear.data.toJSON(),
 kick.data.toJSON(),
