@@ -13,14 +13,18 @@ import type { Command } from '../../types/command.js';
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName('reglement')
-    .setDescription('Publie le règlement du serveur avec le système de rôle.')
+    .setDescription(
+      'Publie le règlement du serveur avec le système de rôle.'
+    )
     .setDefaultMemberPermissions(
       PermissionFlagsBits.Administrator
     )
     .addRoleOption(option =>
       option
         .setName('role')
-        .setDescription('Rôle donné après acceptation du règlement.')
+        .setDescription(
+          'Rôle donné après acceptation du règlement.'
+        )
         .setRequired(true)
     ),
 
@@ -28,7 +32,10 @@ const command: Command = {
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
     const role =
-      interaction.options.getRole('role', true);
+      interaction.options.getRole(
+        'role',
+        true
+      );
 
     const channel =
       interaction.channel;
@@ -49,7 +56,9 @@ const command: Command = {
 
     const embed =
       new EmbedBuilder()
-        .setTitle('📜 Règlement — Tom\'s Développement')
+        .setTitle(
+          '📜 Règlement — Tom\'s Développement'
+        )
         .setDescription(
           [
             'Bienvenue sur **Tom\'s Développement** !',
@@ -87,14 +96,22 @@ const command: Command = {
 
     const button =
       new ButtonBuilder()
-        .setCustomId('reglement:accept')
-        .setLabel('J’accepte le règlement')
+        .setCustomId(
+          `reglement:accept:${role.id}`
+        )
+        .setLabel(
+          'J’accepte le règlement'
+        )
         .setEmoji('✅')
-        .setStyle(ButtonStyle.Success);
+        .setStyle(
+          ButtonStyle.Success
+        );
 
     const row =
       new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(button);
+        .addComponents(
+          button
+        );
 
     await channel.send({
       embeds: [embed],

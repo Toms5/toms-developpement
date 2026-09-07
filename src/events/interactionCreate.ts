@@ -1,10 +1,11 @@
 import {
   ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
   EmbedBuilder,
   Events,
+  ModalBuilder,
   PermissionFlagsBits,
+  TextInputBuilder,
+  TextInputStyle,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   type Interaction
@@ -23,7 +24,6 @@ import {
 
 import {
   addTask,
-  completeTask,
   deleteProject,
   getProject,
   getProjectHistory,
@@ -50,6 +50,132 @@ function isStaff(
     ) ??
     false
   );
+}
+
+async function handleRulesAcceptance(
+  interaction: any
+): Promise<void> {
+  const parts =
+    interaction.customId.split(':');
+
+  const roleId =
+    parts[2];
+
+  if (!roleId) {
+    await interaction.reply({
+      content:
+        '❌ Le rôle associé à ce règlement est introuvable.',
+      ephemeral: true
+    });
+
+    return;
+  }
+
+  await interaction.deferUpdate();
+
+  const guild =
+    interaction.guild;
+
+  if (!guild) {
+    await interaction.followUp({
+      content:
+        '❌ Cette action doit être effectuée sur un serveur.',
+      ephemeral: true
+    }).catch(() => null);
+
+    return;
+  }
+
+  const member =
+    await guild.members
+      .fetch(interaction.user.id)
+      .catch(() => null);
+
+  if (!member) {
+    await interaction.followUp({
+      content:
+        '❌ Impossible de récupérer ton profil Discord.',
+      ephemeral: true
+    }).catch(() => null);
+
+    return;
+  }
+
+  const role =
+    await guild.roles
+      .fetch(roleId)
+      .catch(() => null);
+
+  if (!role) {
+    await interaction.followUp({
+      content:
+        '❌ Le rôle associé à ce règlement n’existe plus.',
+      ephemeral: true
+    }).catch(() => null);
+
+    return;
+  }
+
+  const botMember =
+    guild.members.me;
+
+  if (!botMember) {
+    await interaction.followUp({
+      content:
+        '❌ Impossible de vérifier les permissions du bot.',
+      ephemeral: true
+    }).catch(() => null);
+
+    return;
+  }
+
+  if (
+    role.position >=
+    botMember.roles.highest.position
+  ) {
+    await interaction.followUp({
+      content:
+        '❌ Je ne peux pas attribuer ce rôle : mon rôle est placé trop bas dans la hiérarchie Discord.',
+      ephemeral: true
+    }).catch(() => null);
+
+    return;
+  }
+
+  if (
+    !member.roles.cache.has(
+      role.id
+    )
+  ) {
+    await member.roles.add(
+      role,
+      'Acceptation du règlement'
+    );
+  }
+
+  await sendLog(
+    guild,
+    new EmbedBuilder()
+      .setTitle(
+        '📜 Règlement accepté'
+      )
+      .setDescription(
+        [
+          `👤 Membre : ${member}`,
+          `🆔 ID : \`${member.id}\``,
+          `🎭 Rôle attribué : ${role}`
+        ].join('\n')
+      )
+      .setTimestamp()
+  );
+
+  await interaction.followUp({
+    content:
+      member.roles.cache.has(role.id)
+        ? `✅ Règlement accepté ! Le rôle **${role.name}** est déjà présent sur ton compte.`
+        : `✅ Règlement accepté ! Le rôle **${role.name}** t’a été attribué.`,
+    ephemeral: true
+  }).catch(() => null);
 }
 
 async function handleHelpCategory(
@@ -142,11 +268,15 @@ async function handleHelpCategory(
   const embed =
     embeds[category] ??
     new EmbedBuilder()
-      .setTitle('❌ Catégorie inconnue');
+      .setTitle(
+        '❌ Catégorie inconnue'
+      );
 
   const menu =
     new StringSelectMenuBuilder()
-      .setCustomId('help:category')
+      .setCustomId(
+        'help:category'
+      )
       .setPlaceholder(
         'Changer de catégorie'
       )
@@ -179,7 +309,9 @@ async function handleHelpCategory(
 
   const row =
     new ActionRowBuilder<StringSelectMenuBuilder>()
-      .addComponents(menu);
+      .addComponents(
+        menu
+      );
 
   await interaction.update({
     embeds: [embed],
@@ -283,8 +415,7 @@ async function handleProjectButton(
 
   if (action === 'addtask') {
     const modal =
-      new (await import('discord.js'))
-        .ModalBuilder()
+      new ModalBuilder()
         .setCustomId(
           `project:addtaskmodal:${projectId}`
         )
@@ -293,8 +424,7 @@ async function handleProjectButton(
         );
 
     const input =
-      new (await import('discord.js'))
-        .TextInputBuilder()
+      new TextInputBuilder()
         .setCustomId(
           'task'
         )
@@ -305,15 +435,16 @@ async function handleProjectButton(
           'Ex : Créer la page d’accueil'
         )
         .setStyle(
-          (await import('discord.js'))
-            .TextInputStyle.Short
+          TextInputStyle.Short
         )
         .setRequired(true)
         .setMaxLength(200);
 
     modal.addComponents(
-      new ActionRowBuilder<any>()
-        .addComponents(input)
+      new ActionRowBuilder<TextInputBuilder>()
+        .addComponents(
+          input
+        )
     );
 
     await interaction.showModal(
@@ -370,7 +501,9 @@ async function handleProjectButton(
         '📊 Choisissez le nouveau statut :',
       components: [
         new ActionRowBuilder<StringSelectMenuBuilder>()
-          .addComponents(menu)
+          .addComponents(
+            menu
+          )
       ],
       ephemeral: true
     });
@@ -582,6 +715,18 @@ export default {
       if (
         interaction.isButton()
       ) {
+        if (
+          interaction.customId.startsWith(
+            'reglement:accept:'
+          )
+        ) {
+          await handleRulesAcceptance(
+            interaction
+          );
+
+          return;
+        }
+
         if (
           interaction.customId ===
           'ticket:create'

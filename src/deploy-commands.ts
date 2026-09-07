@@ -1,8 +1,8 @@
 import 'dotenv/config';
 
 import {
-REST,
-Routes
+  REST,
+  Routes
 } from 'discord.js';
 
 import ping from './commands/general/ping.js';
@@ -22,80 +22,82 @@ import untimeout from './commands/moderation/untimeout.js';
 import ticketPanel from './commands/tickets/ticket-panel.js';
 
 import projet from './commands/projects/projet.js';
+import projetRepository from './commands/projects/projet-repository.js';
 
 const token =
-process.env.DISCORD_TOKEN;
+  process.env.DISCORD_TOKEN;
 
 const clientId =
-process.env.CLIENT_ID;
+  process.env.CLIENT_ID;
 
 const guildId =
-process.env.GUILD_ID;
+  process.env.GUILD_ID;
 
 if (!token) {
-throw new Error(
-'❌ DISCORD_TOKEN est manquant.'
-);
+  throw new Error(
+    '❌ DISCORD_TOKEN est manquant.'
+  );
 }
 
 if (!clientId) {
-throw new Error(
-'❌ CLIENT_ID est manquant.'
-);
+  throw new Error(
+    '❌ CLIENT_ID est manquant.'
+  );
 }
 
 if (!guildId) {
-throw new Error(
-'❌ GUILD_ID est manquant.'
-);
+  throw new Error(
+    '❌ GUILD_ID est manquant.'
+  );
 }
 
 const commands = [
-ping.data.toJSON(),
-help.data.toJSON(),
-serverinfo.data.toJSON(),
-userinfo.data.toJSON(),
-avis.data.toJSON(),
-reglement.data.toJSON(),
-indexCommand.data.toJSON(),
+  ping.data.toJSON(),
+  help.data.toJSON(),
+  serverinfo.data.toJSON(),
+  userinfo.data.toJSON(),
+  avis.data.toJSON(),
+  reglement.data.toJSON(),
+  indexCommand.data.toJSON(),
 
-clear.data.toJSON(),
-kick.data.toJSON(),
-ban.data.toJSON(),
-timeout.data.toJSON(),
-untimeout.data.toJSON(),
+  clear.data.toJSON(),
+  kick.data.toJSON(),
+  ban.data.toJSON(),
+  timeout.data.toJSON(),
+  untimeout.data.toJSON(),
 
-ticketPanel.data.toJSON(),
+  ticketPanel.data.toJSON(),
 
-projet.data.toJSON()
+  projet.data.toJSON(),
+  projetRepository.data.toJSON()
 ];
 
 const rest =
-new REST({
-version: '10'
-}).setToken(token);
+  new REST({
+    version: '10'
+  }).setToken(token);
 
 try {
-console.log(
-'🔄 Enregistrement des commandes...'
-);
+  console.log(
+    '🔄 Enregistrement des commandes...'
+  );
 
-await rest.put(
-Routes.applicationGuildCommands(
-clientId,
-guildId
-),
-{
-body: commands
-}
-);
+  await rest.put(
+    Routes.applicationGuildCommands(
+      clientId,
+      guildId
+    ),
+    {
+      body: commands
+    }
+  );
 
-console.log(
-'✅ Commandes enregistrées avec succès.'
-);
+  console.log(
+    '✅ Commandes enregistrées avec succès.'
+  );
 } catch (error) {
-console.error(
-'❌ Impossible d’enregistrer les commandes :',
-error
-);
+  console.error(
+    '❌ Impossible d’enregistrer les commandes :',
+    error
+  );
 }
