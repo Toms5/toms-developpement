@@ -149,22 +149,5 @@
     ],
     "createdAt": "2026-09-08T13:02:52.138Z",
     "updatedAt": "2026-09-08T13:02:52.138Z"
-  },
-  {
-    "id": 5,
-    "name": "Bot Discord",
-    "description": "Bot Discord Tom's Développement",
-    "status": "planifie",
-    "tasks": [],
-    "history": [
-      {
-        "action": "Création",
-        "userId": "297729560210964480",
-        "details": "Projet \"Bot Discord\" créé.",
-        "createdAt": "2026-09-08T14:07:15.432Z"
-      }
-    ],
-    "createdAt": "2026-09-08T14:07:15.432Z",
-    "updatedAt": "2026-09-08T14:07:15.432Z"
   }
 ]
