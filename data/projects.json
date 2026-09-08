@@ -73,6 +73,11 @@
         "id": 2,
         "name": "armes sorties page d'accueil + alerte fds",
         "completed": false
+      },
+      {
+        "id": 3,
+        "name": "trombinoscope",
+        "completed": false
       }
     ],
     "history": [
@@ -93,9 +98,15 @@
         "userId": "297729560210964480",
         "details": "Tâche #2 : \"armes sorties page d'accueil + alerte fds\"",
         "createdAt": "2026-09-08T13:00:31.614Z"
+      },
+      {
+        "action": "Tâche ajoutée",
+        "userId": "297729560210964480",
+        "details": "Tâche #3 : \"trombinoscope\"",
+        "createdAt": "2026-09-08T13:00:38.786Z"
       }
     ],
     "createdAt": "2026-09-08T12:59:56.524Z",
-    "updatedAt": "2026-09-08T13:00:31.614Z"
+    "updatedAt": "2026-09-08T13:00:38.786Z"
   }
 ]
