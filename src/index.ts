@@ -17,6 +17,7 @@ import userinfo from './commands/general/userinfo.js';
 import avis from './commands/general/avis.js';
 import reglement from './commands/general/reglement.js';
 import indexCommand from './commands/general/index.js';
+import tarifs from './commands/general/tarifs.js';
 
 import clear from './commands/moderation/clear.js';
 import kick from './commands/moderation/kick.js';
@@ -49,6 +50,10 @@ import {
   initializeProjectRepositoryStorage
 } from './services/projectRepositoryService.js';
 
+import {
+  initializePricingStorage
+} from './services/pricingService.js';
+
 import type { Command } from './types/command.js';
 
 const client = new Client({
@@ -68,7 +73,10 @@ const client = new Client({
 });
 
 client.commands =
-  new Collection<string, Command>();
+  new Collection<
+    string,
+    Command
+  >();
 
 const commands: Command[] = [
   ping,
@@ -78,6 +86,7 @@ const commands: Command[] = [
   avis,
   reglement,
   indexCommand,
+  tarifs,
 
   clear,
   kick,
@@ -91,7 +100,9 @@ const commands: Command[] = [
   projetRepository
 ];
 
-for (const command of commands) {
+for (
+  const command of commands
+) {
   client.commands.set(
     command.data.name,
     command
@@ -105,6 +116,8 @@ client.once(
       await initializeProjectStorage();
 
       await initializeProjectRepositoryStorage();
+
+      await initializePricingStorage();
     } catch (error) {
       console.error(
         '❌ Impossible de synchroniser les données depuis GitHub :',
@@ -112,10 +125,17 @@ client.once(
       );
     }
 
-    await ready.execute(client);
+    await ready.execute(
+      client
+    );
 
-    startBotActivity(client);
-    startServerStats(client);
+    startBotActivity(
+      client
+    );
+
+    startServerStats(
+      client
+    );
 
     for (
       const guild of client.guilds.cache.values()
@@ -162,7 +182,10 @@ client.on(
 
 client.on(
   Events.MessageUpdate,
-  (oldMessage, newMessage) =>
+  (
+    oldMessage,
+    newMessage
+  ) =>
     messageUpdate.execute(
       oldMessage,
       newMessage
@@ -171,7 +194,10 @@ client.on(
 
 client.on(
   Events.MessageReactionAdd,
-  (reaction, user) =>
+  (
+    reaction,
+    user
+  ) =>
     messageReactionAdd.execute(
       reaction,
       user

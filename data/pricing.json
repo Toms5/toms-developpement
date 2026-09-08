@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "name": "Développement Discord",
+    "description": "Création ou développement de fonctionnalités personnalisées pour un bot Discord.",
+    "category": "discord",
+    "price": 50,
+    "createdAt": "2026-09-08T00:00:00.000Z",
+    "updatedAt": "2026-09-08T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "name": "Script FiveM",
+    "description": "Développement d’un script Lua/FiveM personnalisé.",
+    "category": "fivem",
+    "price": 50,
+    "createdAt": "2026-09-08T00:00:00.000Z",
+    "updatedAt": "2026-09-08T00:00:00.000Z"
+  },
+  {
+    "id": 3,
+    "name": "Site web",
+    "description": "Création d’un site web personnalisé.",
+    "category": "site",
+    "price": 100,
+    "createdAt": "2026-09-08T00:00:00.000Z",
+    "updatedAt": "2026-09-08T00:00:00.000Z"
+  }
+]

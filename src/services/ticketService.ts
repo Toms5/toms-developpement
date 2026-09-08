@@ -374,8 +374,11 @@ export async function createTicket(
   const number =
     getNextTicketNumber(guild);
 
+  const formattedNumber =
+    String(number).padStart(3, '0');
+
   const channelName =
-    `ticket-${String(number).padStart(3, '0')}`;
+    `ticket-${formattedNumber}`;
 
   const staffRoles =
     getStaffRoles(guild);
@@ -428,7 +431,7 @@ export async function createTicket(
   const embed =
     new EmbedBuilder()
       .setTitle(
-        `🎫 Ticket #${String(number).padStart(3, '0')}`
+        `🎫 Ticket #${formattedNumber}`
       )
       .setDescription(
         [
@@ -497,7 +500,7 @@ export async function createTicket(
       .setTitle('🎫 Ticket créé')
       .setDescription(
         [
-          `Ticket : **#${String(number).padStart(3, '0')}**`,
+          `Ticket : **#${formattedNumber}**`,
           `Client : <@${interaction.user.id}>`,
           `Type : **${ticketType}**`,
           `Salon : ${channel}`
@@ -592,6 +595,48 @@ export async function closeTicket(
     return;
   }
 
+  /*
+   * On bloque immédiatement toute nouvelle fermeture.
+   * Le client peut toujours voir le salon et utiliser
+   * le bouton de notation.
+   */
+  const closedButton =
+    new ButtonBuilder()
+      .setCustomId(
+        'ticket:close:disabled'
+      )
+      .setLabel(
+        'Ticket en cours de fermeture'
+      )
+      .setEmoji('🔒')
+      .setStyle(
+        ButtonStyle.Secondary
+      )
+      .setDisabled(true);
+
+  await interaction.message.edit({
+    components: [
+      new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(
+          closedButton
+        )
+    ]
+  }).catch(() => null);
+
+  /*
+   * Le client ne peut plus écrire une fois le ticket
+   * fermé, mais conserve ViewChannel + ReadMessageHistory
+   * afin de pouvoir donner son avis.
+   */
+  await channel.permissionOverwrites.edit(
+    ownerId,
+    {
+      ViewChannel: true,
+      SendMessages: false,
+      ReadMessageHistory: true
+    }
+  );
+
   const ratingButtons =
     new ActionRowBuilder<ButtonBuilder>()
       .addComponents(
@@ -616,29 +661,6 @@ export async function closeTicket(
               )
         )
       );
-
-  await channel.permissionOverwrites.edit(
-    ownerId,
-    {
-      ViewChannel: true,
-      SendMessages: false,
-      ReadMessageHistory: true
-    }
-  );
-
-  const closedButton =
-    new ButtonBuilder()
-      .setCustomId(
-        'ticket:close:disabled'
-      )
-      .setLabel(
-        'Ticket en cours de fermeture'
-      )
-      .setEmoji('🔒')
-      .setStyle(
-        ButtonStyle.Secondary
-      )
-      .setDisabled(true);
 
   await channel.send({
     content:
@@ -669,22 +691,18 @@ export async function closeTicket(
         })
         .setTimestamp()
     ],
-    components: [ratingButtons]
+    components: [ratingButtons],
+    allowedMentions: {
+      users: [ownerId]
+    }
   });
-
-  await interaction.message.edit({
-    components: [
-      new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(
-          closedButton
-        )
-    ]
-  }).catch(() => null);
 
   await sendLog(
     interaction.guild!,
     new EmbedBuilder()
-      .setTitle('🔒 Ticket en cours de fermeture')
+      .setTitle(
+        '🔒 Ticket en cours de fermeture'
+      )
       .setDescription(
         [
           `Ticket : **#${ticketNumber}**`,
@@ -713,6 +731,26 @@ export async function handleTicketRating(
     channel.type !==
       ChannelType.GuildText
   ) {
+    await interaction.reply({
+      content:
+        '❌ Cette action doit être effectuée dans un ticket.',
+      ephemeral: true
+    });
+
+    return;
+  }
+
+  if (
+    !channel.name.startsWith(
+      'ticket-'
+    )
+  ) {
+    await interaction.reply({
+      content:
+        '❌ Ce ticket n’est plus disponible pour une évaluation.',
+      ephemeral: true
+    });
+
     return;
   }
 
@@ -744,6 +782,12 @@ export async function handleTicketRating(
     rating < 1 ||
     rating > 5
   ) {
+    await interaction.reply({
+      content:
+        '❌ Cette note est invalide.',
+      ephemeral: true
+    });
+
     return;
   }
 
@@ -765,6 +809,35 @@ export async function handleTicketRating(
       anonymous: true
     }
   );
+
+  /*
+   * Désactive les boutons de notation afin d'éviter
+   * qu'un client change plusieurs fois sa note.
+   */
+  await interaction.message.edit({
+    components: [
+      new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(
+          ...[1, 2, 3, 4, 5].map(
+            value =>
+              new ButtonBuilder()
+                .setCustomId(
+                  `ticket:rate:disabled:${value}`
+                )
+                .setLabel(
+                  String(value)
+                )
+                .setEmoji('⭐')
+                .setStyle(
+                  value === rating
+                    ? ButtonStyle.Success
+                    : ButtonStyle.Secondary
+                )
+                .setDisabled(true)
+          )
+        )
+    ]
+  }).catch(() => null);
 
   const modal =
     new ModalBuilder()
@@ -893,10 +966,22 @@ function sanitizeComment(
   comment: string
 ): string {
   return comment
-    .replace(/@everyone/gi, '@\u200Beveryone')
-    .replace(/@here/gi, '@\u200Bhere')
-    .replace(/<@&\d+>/g, '[mention de rôle]')
-    .replace(/<@!?\d+>/g, '[mention]');
+    .replace(
+      /@everyone/gi,
+      '@\u200Beveryone'
+    )
+    .replace(
+      /@here/gi,
+      '@\u200Bhere'
+    )
+    .replace(
+      /<@&\d+>/g,
+      '[mention de rôle]'
+    )
+    .replace(
+      /<@!?\d+>/g,
+      '[mention]'
+    );
 }
 
 export async function publishReview(
@@ -1003,6 +1088,10 @@ export async function publishReview(
       interaction.guild
     );
 
+  /*
+   * Le client ne peut plus voir le ticket après
+   * publication de son avis.
+   */
   await channel.permissionOverwrites.edit(
     review.clientId,
     {
@@ -1011,6 +1100,10 @@ export async function publishReview(
     }
   );
 
+  /*
+   * Le staff peut consulter l'archive mais ne peut
+   * plus écrire dedans.
+   */
   const staffRoles =
     getStaffRoles(
       interaction.guild

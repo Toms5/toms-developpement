@@ -11,15 +11,20 @@ import {
 import type { Command } from '../../types/command.js';
 
 import {
+  addProjectPayment,
   addTask,
   completeTask,
   createProject,
   deleteProject,
+  formatPrice,
   getProject,
   getProjects,
   getProjectHistory,
+  getProjectPaymentProgress,
   getProjectProgress,
+  getProjectRemainingAmount,
   getStatusLabel,
+  updateProjectFinance,
   updateProjectStatus,
   type ProjectStatus
 } from '../../services/projectService.js';
@@ -83,6 +88,72 @@ function getClientText(
     : 'Aucun client associé';
 }
 
+function getProgressBar(
+  percentage: number
+): string {
+  const total = 10;
+
+  const filled =
+    Math.round(
+      (percentage /
+        100) *
+        total
+    );
+
+  return (
+    '█'.repeat(filled) +
+    '░'.repeat(
+      total - filled
+    )
+  );
+}
+
+function buildFinanceEmbed(
+  projectId: number
+): EmbedBuilder {
+  const project =
+    getProject(projectId);
+
+  if (!project) {
+    return new EmbedBuilder()
+      .setTitle(
+        '❌ Projet introuvable'
+      );
+  }
+
+  const remaining =
+    getProjectRemainingAmount(
+      project
+    );
+
+  const paymentProgress =
+    getProjectPaymentProgress(
+      project
+    );
+
+  return new EmbedBuilder()
+    .setTitle(
+      `💰 Finances — Projet #${project.id}`
+    )
+    .setDescription(
+      [
+        `📦 **${project.name}**`,
+        '',
+        `💰 Prix total : **${formatPrice(project.price)}**`,
+        `💳 Montant payé : **${formatPrice(project.paidAmount)}**`,
+        `📌 Reste à payer : **${formatPrice(remaining)}**`,
+        '',
+        `📊 Paiement : **${paymentProgress}%**`,
+        `\`${getProgressBar(paymentProgress)}\``
+      ].join('\n')
+    )
+    .setFooter({
+      text:
+        "Tom's Développement • Finances"
+    })
+    .setTimestamp();
+}
+
 function buildProjectEmbed(
   projectId: number
 ): EmbedBuilder {
@@ -91,19 +162,33 @@ function buildProjectEmbed(
 
   if (!project) {
     return new EmbedBuilder()
-      .setTitle('❌ Projet introuvable')
+      .setTitle(
+        '❌ Projet introuvable'
+      )
       .setDescription(
         'Ce projet n’existe plus.'
       );
   }
 
   const progress =
-    getProjectProgress(project);
+    getProjectProgress(
+      project
+    );
 
   const completed =
     project.tasks.filter(
       task => task.completed
     ).length;
+
+  const remaining =
+    getProjectRemainingAmount(
+      project
+    );
+
+  const paymentProgress =
+    getProjectPaymentProgress(
+      project
+    );
 
   const tasks =
     project.tasks
@@ -128,6 +213,16 @@ function buildProjectEmbed(
       ? `🔗 **Repository GitHub :** ${repository.url}`
       : '🔗 **Repository GitHub :** Aucun repository lié.';
 
+  const ticketText =
+    project.ticketChannelId
+      ? `🎫 **Ticket :** <#${project.ticketChannelId}>`
+      : '🎫 **Ticket :** Aucun ticket associé.';
+
+  const quoteText =
+    typeof project.quoteId === 'number'
+      ? `🧾 **Devis :** #${project.quoteId}`
+      : '🧾 **Devis :** Aucun devis associé.';
+
   return new EmbedBuilder()
     .setTitle(
       `📦 Projet #${project.id} — ${project.name}`
@@ -138,7 +233,16 @@ function buildProjectEmbed(
         '',
         `📊 **Statut :** ${getStatusLabel(project.status)}`,
         `📈 **Progression :** ${progress}%`,
+        `\`${getProgressBar(progress)}\``,
         `📋 **Tâches :** ${completed}/${project.tasks.length}`,
+        '',
+        `💰 **Prix :** ${formatPrice(project.price)}`,
+        `💳 **Payé :** ${formatPrice(project.paidAmount)}`,
+        `📌 **Reste :** ${formatPrice(remaining)}`,
+        `💵 **Paiement :** ${paymentProgress}%`,
+        '',
+        ticketText,
+        quoteText,
         '',
         repositoryText,
         '',
@@ -173,7 +277,9 @@ function buildProjectButtons(
           )
           .setLabel('Détails')
           .setEmoji('🔎')
-          .setStyle(ButtonStyle.Primary),
+          .setStyle(
+            ButtonStyle.Primary
+          ),
 
         new ButtonBuilder()
           .setCustomId(
@@ -181,7 +287,9 @@ function buildProjectButtons(
           )
           .setLabel('Tâches')
           .setEmoji('📋')
-          .setStyle(ButtonStyle.Secondary),
+          .setStyle(
+            ButtonStyle.Secondary
+          ),
 
         new ButtonBuilder()
           .setCustomId(
@@ -189,15 +297,19 @@ function buildProjectButtons(
           )
           .setLabel('Historique')
           .setEmoji('🕘')
-          .setStyle(ButtonStyle.Secondary),
+          .setStyle(
+            ButtonStyle.Secondary
+          ),
 
         new ButtonBuilder()
           .setCustomId(
-            `project:status:${projectId}`
+            `project:finance:${projectId}`
           )
-          .setLabel('Statut')
-          .setEmoji('📊')
-          .setStyle(ButtonStyle.Primary)
+          .setLabel('Finances')
+          .setEmoji('💰')
+          .setStyle(
+            ButtonStyle.Success
+          )
       );
 
   const management =
@@ -205,11 +317,23 @@ function buildProjectButtons(
       .addComponents(
         new ButtonBuilder()
           .setCustomId(
+            `project:status:${projectId}`
+          )
+          .setLabel('Statut')
+          .setEmoji('📊')
+          .setStyle(
+            ButtonStyle.Primary
+          ),
+
+        new ButtonBuilder()
+          .setCustomId(
             `project:addtask:${projectId}`
           )
           .setLabel('Ajouter une tâche')
           .setEmoji('➕')
-          .setStyle(ButtonStyle.Success),
+          .setStyle(
+            ButtonStyle.Success
+          ),
 
         new ButtonBuilder()
           .setCustomId(
@@ -217,7 +341,9 @@ function buildProjectButtons(
           )
           .setLabel('Supprimer')
           .setEmoji('🗑️')
-          .setStyle(ButtonStyle.Danger)
+          .setStyle(
+            ButtonStyle.Danger
+          )
       );
 
   const repository =
@@ -239,8 +365,12 @@ function buildProjectButtons(
               'Repository GitHub'
             )
             .setEmoji('🔗')
-            .setStyle(ButtonStyle.Link)
-            .setURL(repository.url)
+            .setStyle(
+              ButtonStyle.Link
+            )
+            .setURL(
+              repository.url
+            )
         )
     );
   }
@@ -266,7 +396,9 @@ function buildProjectHistory(
   }
 
   const history =
-    getProjectHistory(projectId)
+    getProjectHistory(
+      projectId
+    )
       .slice(-15)
       .reverse();
 
@@ -293,7 +425,9 @@ function buildProjectHistory(
     )
     .setDescription(
       lines.length > 0
-        ? lines.join('\n\n')
+        ? lines.join(
+            '\n\n'
+          )
         : 'Aucun historique disponible.'
     )
     .setFooter({
@@ -316,6 +450,11 @@ function buildTaskEmbed(
       );
   }
 
+  const progress =
+    getProjectProgress(
+      project
+    );
+
   const lines =
     project.tasks.length > 0
       ? project.tasks.map(
@@ -333,7 +472,12 @@ function buildTaskEmbed(
       `📋 Tâches — Projet #${project.id}`
     )
     .setDescription(
-      lines.join('\n')
+      [
+        `📈 Progression : **${progress}%**`,
+        `\`${getProgressBar(progress)}\``,
+        '',
+        ...lines
+      ].join('\n')
     )
     .setFooter({
       text:
@@ -386,6 +530,33 @@ const command: Command = {
               'Client du projet (optionnel).'
             )
             .setRequired(false)
+        )
+        .addNumberOption(option =>
+          option
+            .setName('prix')
+            .setDescription(
+              'Prix total du projet.'
+            )
+            .setRequired(false)
+            .setMinValue(0)
+        )
+        .addNumberOption(option =>
+          option
+            .setName('paye')
+            .setDescription(
+              'Montant déjà payé.'
+            )
+            .setRequired(false)
+            .setMinValue(0)
+        )
+        .addIntegerOption(option =>
+          option
+            .setName('devis')
+            .setDescription(
+              'Numéro du devis associé.'
+            )
+            .setRequired(false)
+            .setMinValue(1)
         )
     )
 
@@ -445,6 +616,67 @@ const command: Command = {
                 })
               )
             )
+        )
+    )
+
+    .addSubcommand(sub =>
+      sub
+        .setName('finances')
+        .setDescription(
+          'Modifie le prix et le montant payé.'
+        )
+        .addIntegerOption(option =>
+          option
+            .setName('id')
+            .setDescription(
+              'Identifiant du projet.'
+            )
+            .setRequired(true)
+            .setMinValue(1)
+        )
+        .addNumberOption(option =>
+          option
+            .setName('prix')
+            .setDescription(
+              'Nouveau prix total.'
+            )
+            .setRequired(true)
+            .setMinValue(0)
+        )
+        .addNumberOption(option =>
+          option
+            .setName('paye')
+            .setDescription(
+              'Montant total payé.'
+            )
+            .setRequired(true)
+            .setMinValue(0)
+        )
+    )
+
+    .addSubcommand(sub =>
+      sub
+        .setName('paiement')
+        .setDescription(
+          'Enregistre un nouveau paiement.'
+        )
+        .addIntegerOption(option =>
+          option
+            .setName('id')
+            .setDescription(
+              'Identifiant du projet.'
+            )
+            .setRequired(true)
+            .setMinValue(1)
+        )
+        .addNumberOption(option =>
+          option
+            .setName('montant')
+            .setDescription(
+              'Montant du paiement.'
+            )
+            .setRequired(true)
+            .setMinValue(0.01)
         )
     )
 
@@ -525,10 +757,14 @@ const command: Command = {
       [
         'creer',
         'statut',
+        'finances',
+        'paiement',
         'supprimer',
         'tache-ajouter',
         'tache-terminee'
-      ].includes(subcommand) &&
+      ].includes(
+        subcommand
+      ) &&
       !isStaff(interaction)
     ) {
       await interaction.editReply({
@@ -539,9 +775,59 @@ const command: Command = {
       return;
     }
 
-    if (subcommand === 'dashboard') {
+    if (
+      subcommand ===
+      'dashboard'
+    ) {
       const projects =
         getProjects();
+
+      const totalPrice =
+        projects.reduce(
+          (sum, project) =>
+            sum +
+            project.price,
+          0
+        );
+
+      const totalPaid =
+        projects.reduce(
+          (sum, project) =>
+            sum +
+            project.paidAmount,
+          0
+        );
+
+      const totalRemaining =
+        projects.reduce(
+          (sum, project) =>
+            sum +
+            getProjectRemainingAmount(
+              project
+            ),
+          0
+        );
+
+      const statusCounts =
+        STATUS_OPTIONS.map(
+          status => ({
+            ...status,
+            count:
+              projects.filter(
+                project =>
+                  project.status ===
+                  status.value
+              ).length
+          })
+        );
+
+      const statusText =
+        statusCounts
+          .map(
+            status =>
+              `${status.emoji} ${status.label} : **${status.count}**`
+          )
+          .join('\n');
 
       const description =
         projects.length === 0
@@ -561,6 +847,7 @@ const command: Command = {
                   `### 📦 #${project.id} — ${project.name}`,
                   `👤 ${getClientText(project.clientId)}`,
                   `${getStatusLabel(project.status)} • ${getProjectProgress(project)}%`,
+                  `💰 ${formatPrice(project.price)} • 💳 ${formatPrice(project.paidAmount)} • 📌 ${formatPrice(getProjectRemainingAmount(project))}`,
                   repository
                     ? `🔗 [Repository GitHub](${repository.url})`
                     : '🔗 Aucun repository GitHub lié'
@@ -576,11 +863,38 @@ const command: Command = {
           .setDescription(
             description
           )
-          .addFields({
-            name: '📦 Projets',
-            value:
-              `**${projects.length}** projet(s)`
-          })
+          .addFields(
+            {
+              name: '📦 Projets',
+              value:
+                `**${projects.length}** projet(s)`,
+              inline: true
+            },
+            {
+              name: '💰 Chiffre projet',
+              value:
+                `**${formatPrice(totalPrice)}**`,
+              inline: true
+            },
+            {
+              name: '💳 Encaissé',
+              value:
+                `**${formatPrice(totalPaid)}**`,
+              inline: true
+            },
+            {
+              name: '📌 À recevoir',
+              value:
+                `**${formatPrice(totalRemaining)}**`,
+              inline: true
+            },
+            {
+              name: '📊 États',
+              value:
+                statusText,
+              inline: false
+            }
+          )
           .setFooter({
             text:
               "Tom's Développement • Dashboard"
@@ -590,7 +904,9 @@ const command: Command = {
       const components:
         ActionRowBuilder<ButtonBuilder>[] = [];
 
-      if (projects.length > 0) {
+      if (
+        projects.length > 0
+      ) {
         const buttons =
           projects
             .slice(0, 5)
@@ -610,7 +926,9 @@ const command: Command = {
 
         components.push(
           new ActionRowBuilder<ButtonBuilder>()
-            .addComponents(buttons)
+            .addComponents(
+              buttons
+            )
         );
       }
 
@@ -622,7 +940,10 @@ const command: Command = {
       return;
     }
 
-    if (subcommand === 'creer') {
+    if (
+      subcommand ===
+      'creer'
+    ) {
       const name =
         interaction.options.getString(
           'nom',
@@ -641,6 +962,36 @@ const command: Command = {
           false
         );
 
+      const price =
+        interaction.options.getNumber(
+          'prix',
+          false
+        ) ?? 0;
+
+      const paidAmount =
+        interaction.options.getNumber(
+          'paye',
+          false
+        ) ?? 0;
+
+      const quoteId =
+        interaction.options.getInteger(
+          'devis',
+          false
+        ) ?? undefined;
+
+      if (
+        paidAmount >
+        price
+      ) {
+        await interaction.editReply({
+          content:
+            '❌ Le montant payé ne peut pas être supérieur au prix total.'
+        });
+
+        return;
+      }
+
       const project =
         createProject(
           name,
@@ -648,7 +999,10 @@ const command: Command = {
           description,
           undefined,
           undefined,
-          interaction.user.id
+          interaction.user.id,
+          price,
+          paidAmount,
+          quoteId
         );
 
       await interaction.editReply({
@@ -666,7 +1020,10 @@ const command: Command = {
       return;
     }
 
-    if (subcommand === 'liste') {
+    if (
+      subcommand ===
+      'liste'
+    ) {
       const projects =
         getProjects();
 
@@ -689,6 +1046,7 @@ const command: Command = {
                       `### #${project.id} — ${project.name}`,
                       `👤 ${getClientText(project.clientId)}`,
                       `${getStatusLabel(project.status)} • ${getProjectProgress(project)}%`,
+                      `💰 ${formatPrice(project.price)} • 💳 ${formatPrice(project.paidAmount)} • 📌 ${formatPrice(getProjectRemainingAmount(project))}`,
                       repository
                         ? `🔗 [Repository GitHub](${repository.url})`
                         : '🔗 Aucun repository GitHub lié'
@@ -716,7 +1074,9 @@ const command: Command = {
       );
 
     const project =
-      getProject(projectId);
+      getProject(
+        projectId
+      );
 
     if (!project) {
       await interaction.editReply({
@@ -727,7 +1087,10 @@ const command: Command = {
       return;
     }
 
-    if (subcommand === 'voir') {
+    if (
+      subcommand ===
+      'voir'
+    ) {
       await interaction.editReply({
         embeds: [
           buildProjectEmbed(
@@ -743,7 +1106,10 @@ const command: Command = {
       return;
     }
 
-    if (subcommand === 'statut') {
+    if (
+      subcommand ===
+      'statut'
+    ) {
       const status =
         interaction.options.getString(
           'statut',
@@ -772,7 +1138,110 @@ const command: Command = {
       return;
     }
 
-    if (subcommand === 'supprimer') {
+    if (
+      subcommand ===
+      'finances'
+    ) {
+      const price =
+        interaction.options.getNumber(
+          'prix',
+          true
+        );
+
+      const paidAmount =
+        interaction.options.getNumber(
+          'paye',
+          true
+        );
+
+      if (
+        paidAmount >
+        price
+      ) {
+        await interaction.editReply({
+          content:
+            '❌ Le montant payé ne peut pas être supérieur au prix total.'
+        });
+
+        return;
+      }
+
+      const updated =
+        updateProjectFinance(
+          projectId,
+          price,
+          paidAmount,
+          interaction.user.id
+        );
+
+      await interaction.editReply({
+        embeds: [
+          buildFinanceEmbed(
+            updated!.id
+          )
+        ],
+        components:
+          buildProjectButtons(
+            updated!.id
+          )
+      });
+
+      return;
+    }
+
+    if (
+      subcommand ===
+      'paiement'
+    ) {
+      const amount =
+        interaction.options.getNumber(
+          'montant',
+          true
+        );
+
+      const remaining =
+        getProjectRemainingAmount(
+          project
+        );
+
+      if (
+        amount >
+        remaining
+      ) {
+        await interaction.editReply({
+          content:
+            `❌ Le paiement demandé (**${formatPrice(amount)}**) dépasse le reste à payer (**${formatPrice(remaining)}**).`
+        });
+
+        return;
+      }
+
+      const updated =
+        addProjectPayment(
+          projectId,
+          amount,
+          interaction.user.id
+        );
+
+      await interaction.editReply({
+        embeds: [
+          buildFinanceEmbed(
+            updated!.id
+          )
+        ],
+        components:
+          buildProjectButtons(
+            updated!.id
+          )
+      });
+
+      return;
+    }
+
+    if (
+      subcommand ===
+      'supprimer'
+    ) {
       const deleted =
         deleteProject(
           projectId,
@@ -789,7 +1258,10 @@ const command: Command = {
       return;
     }
 
-    if (subcommand === 'tache-ajouter') {
+    if (
+      subcommand ===
+      'tache-ajouter'
+    ) {
       const taskName =
         interaction.options.getString(
           'nom',
@@ -817,7 +1289,10 @@ const command: Command = {
       return;
     }
 
-    if (subcommand === 'tache-terminee') {
+    if (
+      subcommand ===
+      'tache-terminee'
+    ) {
       const taskId =
         interaction.options.getInteger(
           'tache',
@@ -856,6 +1331,7 @@ const command: Command = {
 };
 
 export {
+  buildFinanceEmbed,
   buildProjectEmbed,
   buildProjectButtons,
   buildProjectHistory,

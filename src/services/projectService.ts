@@ -41,11 +41,19 @@ export interface Project {
   name: string;
   clientId?: string;
   description: string;
+
+  price: number;
+  paidAmount: number;
+  quoteId?: number;
+
   status: ProjectStatus;
+
   tasks: ProjectTask[];
   history: ProjectHistoryEntry[];
+
   ticketChannelId?: string;
   ticketNumber?: string;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -90,6 +98,60 @@ function ensureDataFile(): void {
   }
 }
 
+function normalizeProject(
+  project: Partial<Project>
+): Project {
+  return {
+    id: project.id ?? 0,
+    name: project.name ?? 'Projet sans nom',
+    ...(project.clientId
+      ? { clientId: project.clientId }
+      : {}),
+    description:
+      project.description ??
+      'Aucune description.',
+    price:
+      typeof project.price === 'number'
+        ? Math.max(0, project.price)
+        : 0,
+    paidAmount:
+      typeof project.paidAmount === 'number'
+        ? Math.max(0, project.paidAmount)
+        : 0,
+    ...(typeof project.quoteId === 'number'
+      ? { quoteId: project.quoteId }
+      : {}),
+    status:
+      project.status ?? 'planifie',
+    tasks:
+      Array.isArray(project.tasks)
+        ? project.tasks
+        : [],
+    history:
+      Array.isArray(project.history)
+        ? project.history
+        : [],
+    ...(project.ticketChannelId
+      ? {
+          ticketChannelId:
+            project.ticketChannelId
+        }
+      : {}),
+    ...(project.ticketNumber
+      ? {
+          ticketNumber:
+            project.ticketNumber
+        }
+      : {}),
+    createdAt:
+      project.createdAt ??
+      new Date().toISOString(),
+    updatedAt:
+      project.updatedAt ??
+      new Date().toISOString()
+  };
+}
+
 function loadProjects(): Project[] {
   ensureDataFile();
 
@@ -108,17 +170,10 @@ function loadProjects(): Project[] {
     }
 
     return parsed.map(
-      (project: Project) => ({
-        ...project,
-        tasks:
-          Array.isArray(project.tasks)
-            ? project.tasks
-            : [],
-        history:
-          Array.isArray(project.history)
-            ? project.history
-            : []
-      })
+      project =>
+        normalizeProject(
+          project as Partial<Project>
+        )
     );
   } catch {
     return [];
@@ -172,9 +227,34 @@ export async function initializeProjectStorage(): Promise<void> {
       localContent
     );
 
+  let projects: unknown;
+
+  try {
+    projects =
+      JSON.parse(
+        syncedContent
+      );
+  } catch {
+    projects = [];
+  }
+
+  const normalized =
+    Array.isArray(projects)
+      ? projects.map(
+          project =>
+            normalizeProject(
+              project as Partial<Project>
+            )
+        )
+      : [];
+
   writeFileSync(
     DATA_FILE,
-    syncedContent,
+    JSON.stringify(
+      normalized,
+      null,
+      2
+    ),
     'utf8'
   );
 
@@ -251,16 +331,17 @@ export function addProjectHistory(
     return null;
   }
 
+  const now =
+    new Date().toISOString();
+
   project.history.push({
     action,
     userId,
     details,
-    createdAt:
-      new Date().toISOString()
+    createdAt: now
   });
 
-  project.updatedAt =
-    new Date().toISOString();
+  project.updatedAt = now;
 
   saveProjects(
     projects,
@@ -285,7 +366,10 @@ export function createProject(
   description: string,
   ticketChannelId?: string,
   ticketNumber?: string,
-  createdById?: string
+  createdById?: string,
+  price = 0,
+  paidAmount = 0,
+  quoteId?: number
 ): Project {
   const projects =
     loadProjects();
@@ -293,18 +377,51 @@ export function createProject(
   const now =
     new Date().toISOString();
 
+  const safePrice =
+    Math.max(
+      0,
+      price
+    );
+
+  const safePaidAmount =
+    Math.min(
+      safePrice,
+      Math.max(
+        0,
+        paidAmount
+      )
+    );
+
   const project: Project = {
-    id: getNextProjectId(projects),
+    id:
+      getNextProjectId(
+        projects
+      ),
     name,
     ...(clientId
       ? { clientId }
       : {}),
     description,
-    status: 'planifie',
+    price: safePrice,
+    paidAmount:
+      safePaidAmount,
+    ...(typeof quoteId === 'number'
+      ? { quoteId }
+      : {}),
+    status:
+      'planifie',
     tasks: [],
     history: [],
-    ticketChannelId,
-    ticketNumber,
+    ...(ticketChannelId
+      ? {
+          ticketChannelId
+        }
+      : {}),
+    ...(ticketNumber
+      ? {
+          ticketNumber
+        }
+      : {}),
     createdAt: now,
     updatedAt: now
   };
@@ -350,6 +467,10 @@ export function updateProjectStatus(
   const oldStatus =
     project.status;
 
+  if (oldStatus === status) {
+    return project;
+  }
+
   project.status = status;
 
   project.updatedAt =
@@ -369,6 +490,141 @@ export function updateProjectStatus(
   saveProjects(
     projects,
     `feat: update project #${projectId} status`
+  );
+
+  return project;
+}
+
+export function updateProjectFinance(
+  projectId: number,
+  price: number,
+  paidAmount: number,
+  userId?: string
+): Project | null {
+  const projects =
+    loadProjects();
+
+  const project =
+    projects.find(
+      item =>
+        item.id === projectId
+    );
+
+  if (!project) {
+    return null;
+  }
+
+  const safePrice =
+    Math.max(
+      0,
+      price
+    );
+
+  const safePaidAmount =
+    Math.min(
+      safePrice,
+      Math.max(
+        0,
+        paidAmount
+      )
+    );
+
+  const oldPrice =
+    project.price;
+
+  const oldPaid =
+    project.paidAmount;
+
+  project.price =
+    safePrice;
+
+  project.paidAmount =
+    safePaidAmount;
+
+  project.updatedAt =
+    new Date().toISOString();
+
+  if (userId) {
+    project.history.push({
+      action: 'Finances modifiées',
+      userId,
+      details:
+        [
+          `Prix : ${formatPrice(oldPrice)} → ${formatPrice(safePrice)}`,
+          `Payé : ${formatPrice(oldPaid)} → ${formatPrice(safePaidAmount)}`
+        ].join(' | '),
+      createdAt:
+        project.updatedAt
+    });
+  }
+
+  saveProjects(
+    projects,
+    `feat: update finances for project #${projectId}`
+  );
+
+  return project;
+}
+
+export function addProjectPayment(
+  projectId: number,
+  amount: number,
+  userId?: string
+): Project | null {
+  const projects =
+    loadProjects();
+
+  const project =
+    projects.find(
+      item =>
+        item.id === projectId
+    );
+
+  if (!project) {
+    return null;
+  }
+
+  const safeAmount =
+    Math.max(
+      0,
+      amount
+    );
+
+  const remaining =
+    getProjectRemainingAmount(
+      project
+    );
+
+  const payment =
+    Math.min(
+      safeAmount,
+      remaining
+    );
+
+  if (payment <= 0) {
+    return project;
+  }
+
+  project.paidAmount +=
+    payment;
+
+  project.updatedAt =
+    new Date().toISOString();
+
+  if (userId) {
+    project.history.push({
+      action: 'Paiement enregistré',
+      userId,
+      details:
+        `Paiement de ${formatPrice(payment)} enregistré.`,
+      createdAt:
+        project.updatedAt
+    });
+  }
+
+  saveProjects(
+    projects,
+    `feat: add payment to project #${projectId}`
   );
 
   return project;
@@ -408,7 +664,10 @@ export function deleteProject(
     });
   }
 
-  projects.splice(index, 1);
+  projects.splice(
+    index,
+    1
+  );
 
   saveProjects(
     projects,
@@ -546,16 +805,56 @@ export function getProjectProgress(
   );
 }
 
+export function getProjectRemainingAmount(
+  project: Project
+): number {
+  return Math.max(
+    0,
+    project.price -
+      project.paidAmount
+  );
+}
+
+export function getProjectPaymentProgress(
+  project: Project
+): number {
+  if (project.price <= 0) {
+    return 0;
+  }
+
+  return Math.round(
+    Math.min(
+      100,
+      (project.paidAmount /
+        project.price) *
+        100
+    )
+  );
+}
+
+export function formatPrice(
+  amount: number
+): string {
+  return `${amount.toFixed(2).replace('.', ',')} €`;
+}
+
 export function getProjectSummary(
   project: Project
 ): string {
   const progress =
-    getProjectProgress(project);
+    getProjectProgress(
+      project
+    );
 
   const completed =
     project.tasks.filter(
       task => task.completed
     ).length;
+
+  const remaining =
+    getProjectRemainingAmount(
+      project
+    );
 
   return [
     `📦 **${project.name}**`,
@@ -564,6 +863,9 @@ export function getProjectSummary(
       : '👤 Client : Aucun client associé',
     `📊 Statut : ${getStatusLabel(project.status)}`,
     `📈 Progression : **${progress}%**`,
-    `📋 Tâches : **${completed}/${project.tasks.length}**`
+    `📋 Tâches : **${completed}/${project.tasks.length}**`,
+    `💰 Prix : **${formatPrice(project.price)}**`,
+    `💳 Payé : **${formatPrice(project.paidAmount)}**`,
+    `📌 Reste : **${formatPrice(remaining)}**`
   ].join('\n');
 }

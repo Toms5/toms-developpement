@@ -23,6 +23,17 @@ import {
 } from '../services/ticketService.js';
 
 import {
+  getQuote,
+  updateQuoteStatus,
+  getQuoteStatusLabel
+} from '../services/quoteService.js';
+
+import {
+  buildQuoteButtons,
+  buildQuoteEmbed
+} from '../commands/general/devis.js';
+
+import {
   addTask,
   deleteProject,
   getProject,
@@ -33,6 +44,7 @@ import {
 } from '../services/projectService.js';
 
 import {
+  buildFinanceEmbed,
   buildProjectButtons,
   buildProjectEmbed,
   buildProjectHistory,
@@ -88,8 +100,12 @@ async function handleRulesAcceptance(
 
   const member =
     await guild.members
-      .fetch(interaction.user.id)
-      .catch(() => null);
+      .fetch(
+        interaction.user.id
+      )
+      .catch(
+        () => null
+      );
 
   if (!member) {
     await interaction.followUp({
@@ -104,7 +120,9 @@ async function handleRulesAcceptance(
   const role =
     await guild.roles
       .fetch(roleId)
-      .catch(() => null);
+      .catch(
+        () => null
+      );
 
   if (!role) {
     await interaction.followUp({
@@ -142,11 +160,12 @@ async function handleRulesAcceptance(
     return;
   }
 
-  if (
-    !member.roles.cache.has(
+  const alreadyHasRole =
+    member.roles.cache.has(
       role.id
-    )
-  ) {
+    );
+
+  if (!alreadyHasRole) {
     await member.roles.add(
       role,
       'Acceptation du règlement'
@@ -171,7 +190,7 @@ async function handleRulesAcceptance(
 
   await interaction.followUp({
     content:
-      member.roles.cache.has(role.id)
+      alreadyHasRole
         ? `✅ Règlement accepté ! Le rôle **${role.name}** est déjà présent sur ton compte.`
         : `✅ Règlement accepté ! Le rôle **${role.name}** t’a été attribué.`,
     ephemeral: true
@@ -190,7 +209,9 @@ async function handleHelpCategory(
   > = {
     general:
       new EmbedBuilder()
-        .setTitle('🏠 Commandes générales')
+        .setTitle(
+          '🏠 Commandes générales'
+        )
         .setDescription(
           [
             '`/help` — Affiche cette aide',
@@ -203,7 +224,9 @@ async function handleHelpCategory(
 
     moderation:
       new EmbedBuilder()
-        .setTitle('🛡️ Modération')
+        .setTitle(
+          '🛡️ Modération'
+        )
         .setDescription(
           [
             '`/clear` — Supprime des messages',
@@ -216,7 +239,9 @@ async function handleHelpCategory(
 
     tickets:
       new EmbedBuilder()
-        .setTitle('🎫 Tickets')
+        .setTitle(
+          '🎫 Tickets'
+        )
         .setDescription(
           [
             '`/ticket-panel` — Installe le panneau de tickets',
@@ -235,7 +260,9 @@ async function handleHelpCategory(
 
     projects:
       new EmbedBuilder()
-        .setTitle('📦 Gestion des projets')
+        .setTitle(
+          '📦 Gestion des projets'
+        )
         .setDescription(
           [
             '`/projet dashboard` — Tableau de bord',
@@ -243,17 +270,21 @@ async function handleHelpCategory(
             '`/projet liste` — Lister les projets',
             '`/projet voir` — Voir un projet',
             '`/projet statut` — Modifier le statut',
+            '`/projet finances` — Modifier les finances',
+            '`/projet paiement` — Enregistrer un paiement',
             '`/projet supprimer` — Supprimer un projet',
             '`/projet tache-ajouter` — Ajouter une tâche',
             '`/projet tache-terminee` — Terminer une tâche',
             '',
-            'Chaque projet possède maintenant un historique des actions.'
+            'Les projets disposent du suivi financier, des tâches, de la progression, de l’historique, du ticket, du devis et du repository GitHub.'
           ].join('\n')
         ),
 
     admin:
       new EmbedBuilder()
-        .setTitle('📋 Administration')
+        .setTitle(
+          '📋 Administration'
+        )
         .setDescription(
           [
             '`/ticket-panel` — Configuration du panneau tickets',
@@ -331,12 +362,18 @@ async function handleProjectButton(
   const projectId =
     Number(parts[2]);
 
-  if (!Number.isInteger(projectId)) {
+  if (
+    !Number.isInteger(
+      projectId
+    )
+  ) {
     return;
   }
 
   const project =
-    getProject(projectId);
+    getProject(
+      projectId
+    );
 
   if (!project) {
     await interaction.reply({
@@ -348,7 +385,9 @@ async function handleProjectButton(
     return;
   }
 
-  if (action === 'view') {
+  if (
+    action === 'view'
+  ) {
     await interaction.update({
       embeds: [
         buildProjectEmbed(
@@ -364,7 +403,9 @@ async function handleProjectButton(
     return;
   }
 
-  if (action === 'tasks') {
+  if (
+    action === 'tasks'
+  ) {
     await interaction.update({
       embeds: [
         buildTaskEmbed(
@@ -380,7 +421,9 @@ async function handleProjectButton(
     return;
   }
 
-  if (action === 'history') {
+  if (
+    action === 'history'
+  ) {
     await interaction.update({
       embeds: [
         buildProjectHistory(
@@ -397,11 +440,28 @@ async function handleProjectButton(
   }
 
   if (
+    action === 'finance'
+  ) {
+    await interaction.reply({
+      embeds: [
+        buildFinanceEmbed(
+          projectId
+        )
+      ],
+      ephemeral: true
+    });
+
+    return;
+  }
+
+  if (
     [
       'status',
       'addtask',
       'delete'
-    ].includes(action) &&
+    ].includes(
+      action
+    ) &&
     !isStaff(interaction)
   ) {
     await interaction.reply({
@@ -413,7 +473,9 @@ async function handleProjectButton(
     return;
   }
 
-  if (action === 'addtask') {
+  if (
+    action === 'addtask'
+  ) {
     const modal =
       new ModalBuilder()
         .setCustomId(
@@ -454,7 +516,9 @@ async function handleProjectButton(
     return;
   }
 
-  if (action === 'status') {
+  if (
+    action === 'status'
+  ) {
     const menu =
       new StringSelectMenuBuilder()
         .setCustomId(
@@ -511,7 +575,9 @@ async function handleProjectButton(
     return;
   }
 
-  if (action === 'delete') {
+  if (
+    action === 'delete'
+  ) {
     const deleted =
       deleteProject(
         projectId,
@@ -558,7 +624,9 @@ async function handleProjectStatus(
     interaction.values?.[0];
 
   if (
-    !Number.isInteger(projectId) ||
+    !Number.isInteger(
+      projectId
+    ) ||
     !status
   ) {
     return;
@@ -621,7 +689,9 @@ async function handleProjectModal(
       .trim();
 
   if (
-    !Number.isInteger(projectId) ||
+    !Number.isInteger(
+      projectId
+    ) ||
     !taskName
   ) {
     await interaction.reply({
@@ -680,8 +750,165 @@ async function handleProjectModal(
   });
 }
 
+async function handleQuoteButton(
+  interaction: any
+): Promise<void> {
+  const parts =
+    interaction.customId.split(':');
+
+  const action =
+    parts[1];
+
+  const quoteId =
+    Number(parts[2]);
+
+  if (
+    !Number.isInteger(
+      quoteId
+    )
+  ) {
+    await interaction.reply({
+      content:
+        '❌ Identifiant de devis invalide.',
+      ephemeral: true
+    });
+
+    return;
+  }
+
+  const quote =
+    getQuote(
+      quoteId
+    );
+
+  if (!quote) {
+    await interaction.reply({
+      content:
+        `❌ Le devis **#${quoteId}** n’existe plus.`,
+      ephemeral: true
+    });
+
+    return;
+  }
+
+  if (
+    quote.status !==
+    'envoye'
+  ) {
+    await interaction.reply({
+      content:
+        `❌ Ce devis n’est plus disponible à l’acceptation ou au refus. Statut actuel : **${getQuoteStatusLabel(quote.status)}**.`,
+      ephemeral: true
+    });
+
+    return;
+  }
+
+  if (
+    interaction.user.id !==
+    quote.clientId
+  ) {
+    await interaction.reply({
+      content:
+        '❌ Seul le client concerné par ce devis peut l’accepter ou le refuser.',
+      ephemeral: true
+    });
+
+    return;
+  }
+
+  if (
+    action ===
+    'accept'
+  ) {
+    const updated =
+      await updateQuoteStatus(
+        quoteId,
+        'accepte',
+        interaction.user.id
+      );
+
+    if (!updated) {
+      await interaction.reply({
+        content:
+          '❌ Impossible d’accepter le devis.',
+        ephemeral: true
+      });
+
+      return;
+    }
+
+    await interaction.update({
+      embeds: [
+        buildQuoteEmbed(
+          quoteId
+        )
+      ],
+      components:
+        buildQuoteButtons(
+          quoteId
+        )
+    });
+
+    await interaction.followUp({
+      content:
+        [
+          '✅ **Devis accepté.**',
+          '',
+          'L’acceptation de ce devis engage le client à effectuer le paiement à la livraison du projet.'
+        ].join('\n'),
+      ephemeral: true
+    });
+
+    return;
+  }
+
+  if (
+    action ===
+    'refuse'
+  ) {
+    const updated =
+      await updateQuoteStatus(
+        quoteId,
+        'refuse',
+        interaction.user.id
+      );
+
+    if (!updated) {
+      await interaction.reply({
+        content:
+          '❌ Impossible de refuser le devis.',
+        ephemeral: true
+      });
+
+      return;
+    }
+
+    await interaction.update({
+      embeds: [
+        buildQuoteEmbed(
+          quoteId
+        )
+      ],
+      components:
+        buildQuoteButtons(
+          quoteId
+        )
+    });
+
+    await interaction.followUp({
+      content:
+        '❌ Le devis a été refusé.',
+      ephemeral: true
+    });
+
+    return;
+  }
+}
+
 export default {
-  name: Events.InteractionCreate,
+  name:
+    Events.InteractionCreate,
 
   async execute(
     interaction: Interaction
@@ -768,6 +995,18 @@ export default {
             'ticket:publish:anonymous'
         ) {
           await publishReview(
+            interaction
+          );
+
+          return;
+        }
+
+        if (
+          interaction.customId.startsWith(
+            'quote:'
+          )
+        ) {
+          await handleQuoteButton(
             interaction
           );
 
@@ -868,13 +1107,20 @@ export default {
           interaction.deferred
         ) {
           await interaction.editReply({
-            content: message
-          }).catch(() => null);
+            content:
+              message
+          }).catch(
+            () => null
+          );
         } else {
           await interaction.reply({
-            content: message,
-            ephemeral: true
-          }).catch(() => null);
+            content:
+              message,
+            ephemeral:
+              true
+          }).catch(
+            () => null
+          );
         }
       }
     }

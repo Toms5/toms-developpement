@@ -12,6 +12,7 @@ import userinfo from './commands/general/userinfo.js';
 import avis from './commands/general/avis.js';
 import reglement from './commands/general/reglement.js';
 import indexCommand from './commands/general/index.js';
+import tarifs from './commands/general/tarifs.js';
 
 import clear from './commands/moderation/clear.js';
 import kick from './commands/moderation/kick.js';
@@ -59,6 +60,7 @@ const commands = [
   avis.data.toJSON(),
   reglement.data.toJSON(),
   indexCommand.data.toJSON(),
+  tarifs.data.toJSON(),
 
   clear.data.toJSON(),
   kick.data.toJSON(),
@@ -75,7 +77,9 @@ const commands = [
 const rest =
   new REST({
     version: '10'
-  }).setToken(token);
+  }).setToken(
+    token
+  );
 
 try {
   console.log(

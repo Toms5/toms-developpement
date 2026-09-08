@@ -13,15 +13,23 @@ import type { Command } from '../../types/command.js';
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName('ticket-panel')
-    .setDescription('Installe le panneau de création de tickets.')
+    .setDescription(
+      'Installe le panneau de création de tickets.'
+    )
     .setDefaultMemberPermissions(
       PermissionFlagsBits.Administrator
     ),
 
-  async execute(interaction: ChatInputCommandInteraction) {
-    const channel = interaction.channel;
+  async execute(
+    interaction: ChatInputCommandInteraction
+  ) {
+    const channel =
+      interaction.channel;
 
-    if (!channel || !channel.isTextBased()) {
+    if (
+      !channel ||
+      !channel.isTextBased()
+    ) {
       await interaction.reply({
         content:
           '❌ Cette commande doit être utilisée dans un salon textuel.',
@@ -41,32 +49,45 @@ const command: Command = {
       return;
     }
 
-    const embed = new EmbedBuilder()
-      .setTitle('🎫 Support — Tom\'s Développement')
-      .setDescription(
-        [
-          'Besoin d’aide ou d’un suivi concernant votre projet ?',
-          '',
-          'Cliquez sur le bouton ci-dessous pour ouvrir un ticket privé.',
-          '',
-          '🛡️ Votre ticket sera visible par vous et l’équipe de développement.',
-          '📋 Merci de fournir un maximum d’informations dans votre demande.'
-        ].join('\n')
-      )
-      .setFooter({
-        text: 'Tom\'s Développement • Support'
-      })
-      .setTimestamp();
+    const embed =
+      new EmbedBuilder()
+        .setTitle(
+          '🎫 Support — Tom\'s Développement'
+        )
+        .setDescription(
+          [
+            'Besoin d’aide ou d’un suivi concernant votre projet ?',
+            '',
+            'Cliquez sur le bouton ci-dessous pour ouvrir un ticket privé.',
+            '',
+            '🛡️ Votre ticket sera visible par vous et l’équipe de développement.',
+            '📋 Merci de fournir un maximum d’informations dans votre demande.'
+          ].join('\n')
+        )
+        .setFooter({
+          text:
+            'Tom\'s Développement • Support'
+        })
+        .setTimestamp();
 
-    const button = new ButtonBuilder()
-      .setCustomId('ticket:create')
-      .setLabel('Ouvrir un ticket')
-      .setEmoji('🎫')
-      .setStyle(ButtonStyle.Primary);
+    const button =
+      new ButtonBuilder()
+        .setCustomId(
+          'ticket:create'
+        )
+        .setLabel(
+          'Ouvrir un ticket'
+        )
+        .setEmoji('🎫')
+        .setStyle(
+          ButtonStyle.Primary
+        );
 
     const row =
       new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(button);
+        .addComponents(
+          button
+        );
 
     await channel.send({
       embeds: [embed],
