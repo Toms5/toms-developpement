@@ -63,16 +63,28 @@
     "name": "Site GN FRRP",
     "description": "Amélioration du site de la Gendarmerie de France Roleplay - Projet Nahel",
     "status": "planifie",
-    "tasks": [],
+    "tasks": [
+      {
+        "id": 1,
+        "name": "Réponse tickets prédéfinis",
+        "completed": false
+      }
+    ],
     "history": [
       {
         "action": "Création",
         "userId": "297729560210964480",
         "details": "Projet \"Site GN FRRP\" créé.",
         "createdAt": "2026-09-08T12:59:56.524Z"
+      },
+      {
+        "action": "Tâche ajoutée",
+        "userId": "297729560210964480",
+        "details": "Tâche #1 : \"Réponse tickets prédéfinis\"",
+        "createdAt": "2026-09-08T13:00:14.692Z"
       }
     ],
     "createdAt": "2026-09-08T12:59:56.524Z",
-    "updatedAt": "2026-09-08T12:59:56.524Z"
+    "updatedAt": "2026-09-08T13:00:14.692Z"
   }
 ]
