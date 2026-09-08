@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import {
+  syncGitHubFile,
+  writeGitHubFile
+} from './githubStorage.js';
+
 export interface ProjectRepository {
   projectId: number;
   url: string;
@@ -8,17 +13,26 @@ export interface ProjectRepository {
   updatedBy: string;
 }
 
-const DATA_DIR = path.resolve('data');
-const DATA_FILE = path.join(
-  DATA_DIR,
-  'project-repositories.json'
-);
+const DATA_DIR =
+  path.resolve('data');
+
+const DATA_FILE =
+  path.join(
+    DATA_DIR,
+    'project-repositories.json'
+  );
+
+const GITHUB_FILE =
+  'data/project-repositories.json';
 
 function ensureDataFile(): void {
   if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, {
-      recursive: true
-    });
+    fs.mkdirSync(
+      DATA_DIR,
+      {
+        recursive: true
+      }
+    );
   }
 
   if (!fs.existsSync(DATA_FILE)) {
@@ -30,10 +44,8 @@ function ensureDataFile(): void {
   }
 }
 
-function readData(): Record<
-  string,
-  ProjectRepository
-> {
+function readData():
+  Record<string, ProjectRepository> {
   ensureDataFile();
 
   try {
@@ -43,32 +55,85 @@ function readData(): Record<
         'utf8'
       );
 
-    return JSON.parse(content);
+    const parsed: unknown =
+      JSON.parse(content);
+
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed)
+    ) {
+      return {};
+    }
+
+    return parsed as Record<
+      string,
+      ProjectRepository
+    >;
   } catch {
     return {};
   }
 }
 
 function writeData(
-  data: Record<string, ProjectRepository>
+  data: Record<
+    string,
+    ProjectRepository
+  >,
+  message: string
 ): void {
   ensureDataFile();
 
-  fs.writeFileSync(
-    DATA_FILE,
+  const content =
     JSON.stringify(
       data,
       null,
       2
-    ),
+    );
+
+  fs.writeFileSync(
+    DATA_FILE,
+    content,
     'utf8'
+  );
+
+  void writeGitHubFile(
+    GITHUB_FILE,
+    content,
+    message
+  ).catch(error => {
+    console.error(
+      '❌ Impossible de synchroniser project-repositories.json avec GitHub :',
+      error
+    );
+  });
+}
+
+export async function initializeProjectRepositoryStorage(): Promise<void> {
+  const content =
+    await syncGitHubFile(
+      GITHUB_FILE,
+      '{}'
+    );
+
+  ensureDataFile();
+
+  fs.writeFileSync(
+    DATA_FILE,
+    content,
+    'utf8'
+  );
+
+  console.log(
+    '☁️ Repositories projets synchronisés depuis GitHub.'
   );
 }
 
 export function getProjectRepository(
   projectId: number
 ): ProjectRepository | null {
-  const data = readData();
+  const data =
+    readData();
 
   return (
     data[String(projectId)] ??
@@ -81,20 +146,25 @@ export function setProjectRepository(
   url: string,
   userId: string
 ): ProjectRepository {
-  const data = readData();
+  const data =
+    readData();
 
-  const repository: ProjectRepository = {
-    projectId,
-    url,
-    updatedAt:
-      new Date().toISOString(),
-    updatedBy: userId
-  };
+  const repository:
+    ProjectRepository = {
+      projectId,
+      url,
+      updatedAt:
+        new Date().toISOString(),
+      updatedBy: userId
+    };
 
   data[String(projectId)] =
     repository;
 
-  writeData(data);
+  writeData(
+    data,
+    `feat: link github repository to project #${projectId}`
+  );
 
   return repository;
 }
@@ -102,15 +172,23 @@ export function setProjectRepository(
 export function removeProjectRepository(
   projectId: number
 ): boolean {
-  const data = readData();
+  const data =
+    readData();
 
-  if (!data[String(projectId)]) {
+  if (
+    !data[String(projectId)]
+  ) {
     return false;
   }
 
-  delete data[String(projectId)];
+  delete data[
+    String(projectId)
+  ];
 
-  writeData(data);
+  writeData(
+    data,
+    `feat: unlink github repository from project #${projectId}`
+  );
 
   return true;
 }
@@ -124,7 +202,8 @@ export function isValidGitHubRepositoryUrl(
 
     return (
       url.protocol === 'https:' &&
-      url.hostname === 'github.com' &&
+      url.hostname ===
+        'github.com' &&
       url.pathname
         .split('/')
         .filter(Boolean)

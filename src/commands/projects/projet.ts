@@ -4,8 +4,6 @@ import {
   ButtonStyle,
   EmbedBuilder,
   PermissionFlagsBits,
-  StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
   SlashCommandBuilder,
   type ChatInputCommandInteraction
 } from 'discord.js';
@@ -77,6 +75,14 @@ function isStaff(
   );
 }
 
+function getClientText(
+  clientId?: string
+): string {
+  return clientId
+    ? `<@${clientId}>`
+    : 'Aucun client associé';
+}
+
 function buildProjectEmbed(
   projectId: number
 ): EmbedBuilder {
@@ -113,7 +119,9 @@ function buildProjectEmbed(
       : 'Aucune tâche pour le moment.';
 
   const repository =
-    getProjectRepository(project.id);
+    getProjectRepository(
+      project.id
+    );
 
   const repositoryText =
     repository
@@ -126,7 +134,7 @@ function buildProjectEmbed(
     )
     .setDescription(
       [
-        `👤 **Client :** <@${project.clientId}>`,
+        `👤 **Client :** ${getClientText(project.clientId)}`,
         '',
         `📊 **Statut :** ${getStatusLabel(project.status)}`,
         `📈 **Progression :** ${progress}%`,
@@ -213,7 +221,9 @@ function buildProjectButtons(
       );
 
   const repository =
-    getProjectRepository(projectId);
+    getProjectRepository(
+      projectId
+    );
 
   const components:
     ActionRowBuilder<ButtonBuilder>[] = [
@@ -221,17 +231,16 @@ function buildProjectButtons(
     ];
 
   if (repository) {
-    const repositoryButton =
-      new ButtonBuilder()
-        .setLabel('Repository GitHub')
-        .setEmoji('🔗')
-        .setStyle(ButtonStyle.Link)
-        .setURL(repository.url);
-
     components.push(
       new ActionRowBuilder<ButtonBuilder>()
         .addComponents(
-          repositoryButton
+          new ButtonBuilder()
+            .setLabel(
+              'Repository GitHub'
+            )
+            .setEmoji('🔗')
+            .setStyle(ButtonStyle.Link)
+            .setURL(repository.url)
         )
     );
   }
@@ -251,7 +260,9 @@ function buildProjectHistory(
 
   if (!project) {
     return new EmbedBuilder()
-      .setTitle('❌ Projet introuvable');
+      .setTitle(
+        '❌ Projet introuvable'
+      );
   }
 
   const history =
@@ -264,7 +275,9 @@ function buildProjectHistory(
       const date =
         new Date(
           entry.createdAt
-        ).toLocaleString('fr-FR');
+        ).toLocaleString(
+          'fr-FR'
+        );
 
       return [
         `**${entry.action}**`,
@@ -298,7 +311,9 @@ function buildTaskEmbed(
 
   if (!project) {
     return new EmbedBuilder()
-      .setTitle('❌ Projet introuvable');
+      .setTitle(
+        '❌ Projet introuvable'
+      );
   }
 
   const lines =
@@ -331,8 +346,9 @@ const command: Command = {
   data: new SlashCommandBuilder()
     .setName('projet')
     .setDescription(
-      'Gestion des projets Tom\'s Développement.'
+      "Gestion des projets Tom's Développement."
     )
+
     .addSubcommand(sub =>
       sub
         .setName('dashboard')
@@ -340,6 +356,7 @@ const command: Command = {
           'Affiche le tableau de bord des projets.'
         )
     )
+
     .addSubcommand(sub =>
       sub
         .setName('creer')
@@ -354,14 +371,6 @@ const command: Command = {
             )
             .setRequired(true)
         )
-        .addUserOption(option =>
-          option
-            .setName('client')
-            .setDescription(
-              'Client du projet.'
-            )
-            .setRequired(true)
-        )
         .addStringOption(option =>
           option
             .setName('description')
@@ -370,7 +379,16 @@ const command: Command = {
             )
             .setRequired(true)
         )
+        .addUserOption(option =>
+          option
+            .setName('client')
+            .setDescription(
+              'Client du projet (optionnel).'
+            )
+            .setRequired(false)
+        )
     )
+
     .addSubcommand(sub =>
       sub
         .setName('liste')
@@ -378,6 +396,7 @@ const command: Command = {
           'Affiche la liste des projets.'
         )
     )
+
     .addSubcommand(sub =>
       sub
         .setName('voir')
@@ -394,6 +413,7 @@ const command: Command = {
             .setMinValue(1)
         )
     )
+
     .addSubcommand(sub =>
       sub
         .setName('statut')
@@ -427,6 +447,7 @@ const command: Command = {
             )
         )
     )
+
     .addSubcommand(sub =>
       sub
         .setName('supprimer')
@@ -442,6 +463,7 @@ const command: Command = {
             .setRequired(true)
         )
     )
+
     .addSubcommand(sub =>
       sub
         .setName('tache-ajouter')
@@ -465,6 +487,7 @@ const command: Command = {
             .setRequired(true)
         )
     )
+
     .addSubcommand(sub =>
       sub
         .setName('tache-terminee')
@@ -528,23 +551,21 @@ const command: Command = {
               'Utilisez `/projet creer` pour créer votre premier projet.'
             ].join('\n')
           : projects
-              .map(
-                project => {
-                  const repository =
-                    getProjectRepository(
-                      project.id
-                    );
+              .map(project => {
+                const repository =
+                  getProjectRepository(
+                    project.id
+                  );
 
-                  return [
-                    `### 📦 #${project.id} — ${project.name}`,
-                    `👤 <@${project.clientId}>`,
-                    `${getStatusLabel(project.status)} • ${getProjectProgress(project)}%`,
-                    repository
-                      ? `🔗 [Repository GitHub](${repository.url})`
-                      : '🔗 Aucun repository GitHub lié'
-                  ].join('\n');
-                }
-              )
+                return [
+                  `### 📦 #${project.id} — ${project.name}`,
+                  `👤 ${getClientText(project.clientId)}`,
+                  `${getStatusLabel(project.status)} • ${getProjectProgress(project)}%`,
+                  repository
+                    ? `🔗 [Repository GitHub](${repository.url})`
+                    : '🔗 Aucun repository GitHub lié'
+                ].join('\n');
+              })
               .join('\n\n');
 
       const embed =
@@ -608,22 +629,22 @@ const command: Command = {
           true
         );
 
-      const client =
-        interaction.options.getUser(
-          'client',
-          true
-        );
-
       const description =
         interaction.options.getString(
           'description',
           true
         );
 
+      const client =
+        interaction.options.getUser(
+          'client',
+          false
+        );
+
       const project =
         createProject(
           name,
-          client.id,
+          client?.id,
           description,
           undefined,
           undefined,
@@ -658,23 +679,21 @@ const command: Command = {
             projects.length === 0
               ? 'Aucun projet enregistré.'
               : projects
-                  .map(
-                    project => {
-                      const repository =
-                        getProjectRepository(
-                          project.id
-                        );
+                  .map(project => {
+                    const repository =
+                      getProjectRepository(
+                        project.id
+                      );
 
-                      return [
-                        `### #${project.id} — ${project.name}`,
-                        `👤 <@${project.clientId}>`,
-                        `${getStatusLabel(project.status)} • ${getProjectProgress(project)}%`,
-                        repository
-                          ? `🔗 [Repository GitHub](${repository.url})`
-                          : '🔗 Aucun repository GitHub lié'
-                      ].join('\n');
-                    }
-                  )
+                    return [
+                      `### #${project.id} — ${project.name}`,
+                      `👤 ${getClientText(project.clientId)}`,
+                      `${getStatusLabel(project.status)} • ${getProjectProgress(project)}%`,
+                      repository
+                        ? `🔗 [Repository GitHub](${repository.url})`
+                        : '🔗 Aucun repository GitHub lié'
+                    ].join('\n');
+                  })
                   .join('\n\n')
           )
           .setFooter({
@@ -777,22 +796,21 @@ const command: Command = {
           true
         );
 
-      const updated =
-        addTask(
-          projectId,
-          taskName,
-          interaction.user.id
-        );
+      addTask(
+        projectId,
+        taskName,
+        interaction.user.id
+      );
 
       await interaction.editReply({
         embeds: [
           buildTaskEmbed(
-            updated!.id
+            projectId
           )
         ],
         components:
           buildProjectButtons(
-            updated!.id
+            projectId
           )
       });
 
@@ -825,12 +843,12 @@ const command: Command = {
       await interaction.editReply({
         embeds: [
           buildTaskEmbed(
-            updated.id
+            projectId
           )
         ],
         components:
           buildProjectButtons(
-            updated.id
+            projectId
           )
       });
     }

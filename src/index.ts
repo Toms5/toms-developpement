@@ -41,6 +41,14 @@ import { createLogChannel } from './services/logger.js';
 import { startBotActivity } from './services/botActivity.js';
 import { startServerStats } from './services/serverStats.js';
 
+import {
+  initializeProjectStorage
+} from './services/projectService.js';
+
+import {
+  initializeProjectRepositoryStorage
+} from './services/projectRepositoryService.js';
+
 import type { Command } from './types/command.js';
 
 const client = new Client({
@@ -92,7 +100,18 @@ for (const command of commands) {
 
 client.once(
   Events.ClientReady,
-  async (client) => {
+  async client => {
+    try {
+      await initializeProjectStorage();
+
+      await initializeProjectRepositoryStorage();
+    } catch (error) {
+      console.error(
+        '❌ Impossible de synchroniser les données depuis GitHub :',
+        error
+      );
+    }
+
     await ready.execute(client);
 
     startBotActivity(client);
@@ -111,7 +130,7 @@ client.once(
 
 client.on(
   Events.InteractionCreate,
-  (interaction) =>
+  interaction =>
     interactionCreate.execute(
       interaction
     )
@@ -119,7 +138,7 @@ client.on(
 
 client.on(
   Events.GuildMemberAdd,
-  (member) =>
+  member =>
     guildMemberAdd.execute(
       member
     )
@@ -127,7 +146,7 @@ client.on(
 
 client.on(
   Events.GuildMemberRemove,
-  (member) =>
+  member =>
     guildMemberRemove.execute(
       member
     )
@@ -135,7 +154,7 @@ client.on(
 
 client.on(
   Events.MessageDelete,
-  (message) =>
+  message =>
     messageDelete.execute(
       message
     )

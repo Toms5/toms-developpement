@@ -4,7 +4,16 @@ import {
   readFileSync,
   writeFileSync
 } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+
+import {
+  dirname,
+  resolve
+} from 'node:path';
+
+import {
+  syncGitHubFile,
+  writeGitHubFile
+} from './githubStorage.js';
 
 export type ProjectStatus =
   | 'planifie'
@@ -30,7 +39,7 @@ export interface ProjectHistoryEntry {
 export interface Project {
   id: number;
   name: string;
-  clientId: string;
+  clientId?: string;
   description: string;
   status: ProjectStatus;
   tasks: ProjectTask[];
@@ -47,7 +56,13 @@ const DATA_FILE = resolve(
   'projects.json'
 );
 
-const STATUS_LABELS: Record<ProjectStatus, string> = {
+const GITHUB_FILE =
+  'data/projects.json';
+
+const STATUS_LABELS: Record<
+  ProjectStatus,
+  string
+> = {
   planifie: '📝 Planifié',
   preparation: '🟡 En préparation',
   developpement: '🔵 En développement',
@@ -57,7 +72,8 @@ const STATUS_LABELS: Record<ProjectStatus, string> = {
 };
 
 function ensureDataFile(): void {
-  const directory = dirname(DATA_FILE);
+  const directory =
+    dirname(DATA_FILE);
 
   if (!existsSync(directory)) {
     mkdirSync(directory, {
@@ -78,44 +94,92 @@ function loadProjects(): Project[] {
   ensureDataFile();
 
   try {
-    const content = readFileSync(
-      DATA_FILE,
-      'utf8'
-    );
+    const content =
+      readFileSync(
+        DATA_FILE,
+        'utf8'
+      );
 
-    const parsed: unknown = JSON.parse(content);
+    const parsed: unknown =
+      JSON.parse(content);
 
     if (!Array.isArray(parsed)) {
       return [];
     }
 
-    return parsed.map((project: Project) => ({
-      ...project,
-      tasks: Array.isArray(project.tasks)
-        ? project.tasks
-        : [],
-      history: Array.isArray(project.history)
-        ? project.history
-        : []
-    }));
+    return parsed.map(
+      (project: Project) => ({
+        ...project,
+        tasks:
+          Array.isArray(project.tasks)
+            ? project.tasks
+            : [],
+        history:
+          Array.isArray(project.history)
+            ? project.history
+            : []
+      })
+    );
   } catch {
     return [];
   }
 }
 
 function saveProjects(
-  projects: Project[]
+  projects: Project[],
+  commitMessage =
+    'chore: update projects'
 ): void {
   ensureDataFile();
 
-  writeFileSync(
-    DATA_FILE,
+  const content =
     JSON.stringify(
       projects,
       null,
       2
-    ),
+    );
+
+  writeFileSync(
+    DATA_FILE,
+    content,
     'utf8'
+  );
+
+  void writeGitHubFile(
+    GITHUB_FILE,
+    content,
+    commitMessage
+  ).catch(error => {
+    console.error(
+      `❌ Impossible de synchroniser ${GITHUB_FILE} avec GitHub :`,
+      error
+    );
+  });
+}
+
+export async function initializeProjectStorage(): Promise<void> {
+  ensureDataFile();
+
+  const localContent =
+    readFileSync(
+      DATA_FILE,
+      'utf8'
+    );
+
+  const syncedContent =
+    await syncGitHubFile(
+      GITHUB_FILE,
+      localContent
+    );
+
+  writeFileSync(
+    DATA_FILE,
+    syncedContent,
+    'utf8'
+  );
+
+  console.log(
+    '☁️ Projets synchronisés depuis GitHub.'
   );
 }
 
@@ -174,12 +238,14 @@ export function addProjectHistory(
   userId: string,
   details: string
 ): Project | null {
-  const projects = loadProjects();
+  const projects =
+    loadProjects();
 
-  const project = projects.find(
-    item =>
-      item.id === projectId
-  );
+  const project =
+    projects.find(
+      item =>
+        item.id === projectId
+    );
 
   if (!project) {
     return null;
@@ -196,7 +262,10 @@ export function addProjectHistory(
   project.updatedAt =
     new Date().toISOString();
 
-  saveProjects(projects);
+  saveProjects(
+    projects,
+    `chore: update history for project #${projectId}`
+  );
 
   return project;
 }
@@ -212,13 +281,14 @@ export function getProjectHistory(
 
 export function createProject(
   name: string,
-  clientId: string,
+  clientId: string | undefined,
   description: string,
   ticketChannelId?: string,
   ticketNumber?: string,
   createdById?: string
 ): Project {
-  const projects = loadProjects();
+  const projects =
+    loadProjects();
 
   const now =
     new Date().toISOString();
@@ -226,7 +296,9 @@ export function createProject(
   const project: Project = {
     id: getNextProjectId(projects),
     name,
-    clientId,
+    ...(clientId
+      ? { clientId }
+      : {}),
     description,
     status: 'planifie',
     tasks: [],
@@ -249,7 +321,10 @@ export function createProject(
 
   projects.push(project);
 
-  saveProjects(projects);
+  saveProjects(
+    projects,
+    `feat: create project #${project.id}`
+  );
 
   return project;
 }
@@ -259,20 +334,24 @@ export function updateProjectStatus(
   status: ProjectStatus,
   changedById?: string
 ): Project | null {
-  const projects = loadProjects();
+  const projects =
+    loadProjects();
 
-  const project = projects.find(
-    item =>
-      item.id === projectId
-  );
+  const project =
+    projects.find(
+      item =>
+        item.id === projectId
+    );
 
   if (!project) {
     return null;
   }
 
-  const oldStatus = project.status;
+  const oldStatus =
+    project.status;
 
   project.status = status;
+
   project.updatedAt =
     new Date().toISOString();
 
@@ -287,7 +366,10 @@ export function updateProjectStatus(
     });
   }
 
-  saveProjects(projects);
+  saveProjects(
+    projects,
+    `feat: update project #${projectId} status`
+  );
 
   return project;
 }
@@ -296,7 +378,8 @@ export function deleteProject(
   projectId: number,
   deletedById?: string
 ): Project | null {
-  const projects = loadProjects();
+  const projects =
+    loadProjects();
 
   const index =
     projects.findIndex(
@@ -327,7 +410,10 @@ export function deleteProject(
 
   projects.splice(index, 1);
 
-  saveProjects(projects);
+  saveProjects(
+    projects,
+    `feat: delete project #${projectId}`
+  );
 
   return deletedProject;
 }
@@ -337,12 +423,14 @@ export function addTask(
   name: string,
   userId?: string
 ): Project | null {
-  const projects = loadProjects();
+  const projects =
+    loadProjects();
 
-  const project = projects.find(
-    item =>
-      item.id === projectId
-  );
+  const project =
+    projects.find(
+      item =>
+        item.id === projectId
+    );
 
   if (!project) {
     return null;
@@ -377,7 +465,10 @@ export function addTask(
     });
   }
 
-  saveProjects(projects);
+  saveProjects(
+    projects,
+    `feat: add task to project #${projectId}`
+  );
 
   return project;
 }
@@ -387,12 +478,14 @@ export function completeTask(
   taskId: number,
   userId?: string
 ): Project | null {
-  const projects = loadProjects();
+  const projects =
+    loadProjects();
 
-  const project = projects.find(
-    item =>
-      item.id === projectId
-  );
+  const project =
+    projects.find(
+      item =>
+        item.id === projectId
+    );
 
   if (!project) {
     return null;
@@ -426,7 +519,10 @@ export function completeTask(
     }
   }
 
-  saveProjects(projects);
+  saveProjects(
+    projects,
+    `feat: complete task #${taskId} on project #${projectId}`
+  );
 
   return project;
 }
@@ -463,7 +559,9 @@ export function getProjectSummary(
 
   return [
     `📦 **${project.name}**`,
-    `👤 Client : <@${project.clientId}>`,
+    project.clientId
+      ? `👤 Client : <@${project.clientId}>`
+      : '👤 Client : Aucun client associé',
     `📊 Statut : ${getStatusLabel(project.status)}`,
     `📈 Progression : **${progress}%**`,
     `📋 Tâches : **${completed}/${project.tasks.length}**`
