@@ -1,9 +1,33 @@
 [
-    {
+  {
     "id": 1,
+    "name": "1",
+    "clientId": "1545002563223683144",
+    "description": "3",
+    "status": "developpement",
+    "tasks": [],
+    "history": [
+      {
+        "action": "Création",
+        "userId": "297729560210964480",
+        "details": "Projet \"1\" créé.",
+        "createdAt": "2026-09-08T11:37:21.621Z"
+      },
+      {
+        "action": "Statut modifié",
+        "userId": "297729560210964480",
+        "details": "📝 Planifié → 🔵 En développement",
+        "createdAt": "2026-09-08T11:38:09.298Z"
+      }
+    ],
+    "createdAt": "2026-09-08T11:37:21.621Z",
+    "updatedAt": "2026-09-08T11:38:09.298Z"
+  },
+  {
+    "id": 2,
     "name": "Bot Discord",
     "description": "Bot Discord Tom's Développement",
-    "status": "test",
+    "status": "preparation",
     "tasks": [],
     "history": [
       {
@@ -17,9 +41,15 @@
         "userId": "297729560210964480",
         "details": "📝 Planifié → 🟣 En test",
         "createdAt": "2026-09-08T12:57:33.791Z"
+      },
+      {
+        "action": "Statut modifié",
+        "userId": "297729560210964480",
+        "details": "🟣 En test → 🟡 En préparation",
+        "createdAt": "2026-09-08T12:58:56.018Z"
       }
     ],
     "createdAt": "2026-09-08T12:57:25.914Z",
-    "updatedAt": "2026-09-08T12:57:33.791Z"
+    "updatedAt": "2026-09-08T12:58:56.018Z"
   }
 ]
