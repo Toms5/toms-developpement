@@ -57,5 +57,22 @@
     ],
     "createdAt": "2026-09-08T12:57:25.914Z",
     "updatedAt": "2026-09-08T12:59:03.579Z"
+  },
+  {
+    "id": 3,
+    "name": "Site GN FRRP",
+    "description": "Amélioration du site de la Gendarmerie de France Roleplay - Projet Nahel",
+    "status": "planifie",
+    "tasks": [],
+    "history": [
+      {
+        "action": "Création",
+        "userId": "297729560210964480",
+        "details": "Projet \"Site GN FRRP\" créé.",
+        "createdAt": "2026-09-08T12:59:56.524Z"
+      }
+    ],
+    "createdAt": "2026-09-08T12:59:56.524Z",
+    "updatedAt": "2026-09-08T12:59:56.524Z"
   }
 ]
