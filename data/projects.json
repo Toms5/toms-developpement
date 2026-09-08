@@ -78,7 +78,7 @@
       {
         "id": 2,
         "name": "armes sorties page d'accueil + alerte fds",
-        "completed": false
+        "completed": true
       },
       {
         "id": 3,
@@ -116,9 +116,15 @@
         "userId": "297729560210964480",
         "details": "Tâche #1 : \"Réponse tickets prédéfinis\"",
         "createdAt": "2026-09-08T13:01:33.532Z"
+      },
+      {
+        "action": "Tâche terminée",
+        "userId": "297729560210964480",
+        "details": "Tâche #2 : \"armes sorties page d'accueil + alerte fds\"",
+        "createdAt": "2026-09-08T13:01:42.769Z"
       }
     ],
     "createdAt": "2026-09-08T12:59:56.524Z",
-    "updatedAt": "2026-09-08T13:01:33.532Z"
+    "updatedAt": "2026-09-08T13:01:42.769Z"
   }
 ]
