@@ -73,7 +73,7 @@
       {
         "id": 1,
         "name": "Réponse tickets prédéfinis",
-        "completed": false
+        "completed": true
       },
       {
         "id": 2,
@@ -110,9 +110,15 @@
         "userId": "297729560210964480",
         "details": "Tâche #3 : \"trombinoscope\"",
         "createdAt": "2026-09-08T13:00:38.786Z"
+      },
+      {
+        "action": "Tâche terminée",
+        "userId": "297729560210964480",
+        "details": "Tâche #1 : \"Réponse tickets prédéfinis\"",
+        "createdAt": "2026-09-08T13:01:33.532Z"
       }
     ],
     "createdAt": "2026-09-08T12:59:56.524Z",
-    "updatedAt": "2026-09-08T13:00:38.786Z"
+    "updatedAt": "2026-09-08T13:01:33.532Z"
   }
 ]
