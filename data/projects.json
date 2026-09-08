@@ -83,7 +83,7 @@
       {
         "id": 3,
         "name": "trombinoscope",
-        "completed": false
+        "completed": true
       }
     ],
     "history": [
@@ -122,9 +122,15 @@
         "userId": "297729560210964480",
         "details": "Tâche #2 : \"armes sorties page d'accueil + alerte fds\"",
         "createdAt": "2026-09-08T13:01:42.769Z"
+      },
+      {
+        "action": "Tâche terminée",
+        "userId": "297729560210964480",
+        "details": "Tâche #3 : \"trombinoscope\"",
+        "createdAt": "2026-09-08T13:01:52.946Z"
       }
     ],
     "createdAt": "2026-09-08T12:59:56.524Z",
-    "updatedAt": "2026-09-08T13:01:42.769Z"
+    "updatedAt": "2026-09-08T13:01:52.946Z"
   }
 ]
