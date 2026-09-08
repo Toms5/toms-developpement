@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": 1,
+    "name": "1",
+    "clientId": "1545002563223683144",
+    "description": "3",
+    "status": "planifie",
+    "tasks": [],
+    "history": [
+      {
+        "action": "Création",
+        "userId": "297729560210964480",
+        "details": "Projet \"1\" créé.",
+        "createdAt": "2026-09-08T11:37:21.621Z"
+      }
+    ],
+    "createdAt": "2026-09-08T11:37:21.621Z",
+    "updatedAt": "2026-09-08T11:37:21.621Z"
+  }
+]
