@@ -27,7 +27,7 @@
     "id": 2,
     "name": "Bot Discord",
     "description": "Bot Discord Tom's Développement",
-    "status": "developpement",
+    "status": "test",
     "tasks": [],
     "history": [
       {
@@ -53,10 +53,16 @@
         "userId": "297729560210964480",
         "details": "🟡 En préparation → 🔵 En développement",
         "createdAt": "2026-09-08T12:59:03.579Z"
+      },
+      {
+        "action": "Statut modifié",
+        "userId": "297729560210964480",
+        "details": "🔵 En développement → 🟣 En test",
+        "createdAt": "2026-09-08T13:01:07.906Z"
       }
     ],
     "createdAt": "2026-09-08T12:57:25.914Z",
-    "updatedAt": "2026-09-08T12:59:03.579Z"
+    "updatedAt": "2026-09-08T13:01:07.906Z"
   },
   {
     "id": 3,
