@@ -4,7 +4,7 @@
     "name": "1",
     "clientId": "1545002563223683144",
     "description": "3",
-    "status": "planifie",
+    "status": "developpement",
     "tasks": [],
     "history": [
       {
@@ -12,9 +12,15 @@
         "userId": "297729560210964480",
         "details": "Projet \"1\" créé.",
         "createdAt": "2026-09-08T11:37:21.621Z"
+      },
+      {
+        "action": "Statut modifié",
+        "userId": "297729560210964480",
+        "details": "📝 Planifié → 🔵 En développement",
+        "createdAt": "2026-09-08T11:38:09.298Z"
       }
     ],
     "createdAt": "2026-09-08T11:37:21.621Z",
-    "updatedAt": "2026-09-08T11:37:21.621Z"
+    "updatedAt": "2026-09-08T11:38:09.298Z"
   }
 ]
